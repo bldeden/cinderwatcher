@@ -4,10 +4,10 @@ const G = {
   towers: [], mons: [], men: [], arrows: [], shells: [], stuck: [], hbars: [], phase: 'play',
 };
 const TOWER = {
-  archer: { name: 'Archer tower', short: 'Archers', icon: 'archer', cost: [70, 90, 140], range: [6.2, 6.8, 7.4], dmg: [9, 11, 14], rate: [.85, .78, .7], n: [1, 2, 3], air: true, ground: true, light: [80, 105, 140], desc: ['Fast flaming arrows.', 'Can hit flyers.'] },
+  archer: { name: 'Archer tower', short: 'Archers', icon: 'archer', cost: [70, 90, 140], range: [6.2, 6.8, 7.4], dmg: [9, 11, 14], rate: [.85, .78, .7], n: [1, 2, 3], air: true, ground: true, light: [80, 105, 140], desc: ['Flaming arrows set foes alight.', 'Can hit flyers.'] },
   bombard: { name: 'Bombard', short: 'Bombard', icon: 'bombard', cost: [120, 130, 190], range: [7.4, 8.0, 8.6], minRange: 2.3, dmg: [36, 60, 98], splash: [1.55, 1.8, 2.1], rate: [2.9, 2.7, 2.5], air: false, ground: true, light: [50, 62, 80], desc: ['Slow shells that burst.', 'Ground targets only.'] },
-  spire: { name: 'Storm spire', short: 'Spire', icon: 'spire', cost: [110, 120, 180], range: [5.5, 6.0, 6.5], dmg: [17, 25, 35], jumps: [3, 4, 6], rate: [2.3, 2.1, 1.9], slow: [.36, .42, .48], slowT: [1.3, 1.5, 1.7], air: true, ground: true, light: [16, 20, 26], desc: ['Chain lightning that slows.', 'Can hit flyers.'] },
-  guard: { name: 'Guard post', short: 'Guards', icon: 'guard', cost: [80, 90, 150], range: [3.4, 3.7, 4.0], n: [2, 3, 3], hp: [62, 90, 135], dmg: [7, 10, 15], rate: [7, 6, 5], air: false, ground: true, light: [55, 70, 90], desc: ['Footmen who block', 'and duel on the road.'] },
+  spire: { name: 'Storm spire', short: 'Spire', icon: 'spire', cost: [110, 120, 180], range: [5.5, 6.0, 6.5], dmg: [17, 25, 35], jumps: [3, 4, 6], rate: [2.3, 2.1, 1.9], slow: [.36, .42, .48], slowT: [1.3, 1.5, 1.7], air: true, ground: true, light: [16, 20, 26], desc: ['Chain lightning shocks and slows.', 'Can hit flyers.'] },
+  guard: { name: 'Guard post', short: 'Guards', icon: 'guard', cost: [80, 90, 150], range: [3.4, 3.7, 4.0], n: [2, 3, 3], hp: [62, 90, 135], dmg: [7, 10, 15], rate: [7, 6, 5], air: false, ground: true, light: [55, 70, 90], desc: ['Footmen who block the road', 'and pin foes in a duel.'] },
 };
 const TOWER_KINDS = ['archer', 'bombard', 'spire', 'guard'];
 
@@ -166,7 +166,7 @@ class Tower {
   constructor(pad, kind, idx) {
     this.pad = pad; this.kind = kind; this.idx = idx; this.lvl = 0; this.def = TOWER[kind];
     this.x = pad.x; this.y = pad.y; this.z = pad.z; this.yaw = pad.face; this.cs = Math.cos(this.yaw); this.sn = Math.sin(this.yaw);
-    this.spent = this.def.cost[0]; this.state = 'build'; this.bt = 0; this.cool = rr(.2, .8); this.kills = 0; this.dealt = 0; this.alive = true; this.recent = 0;
+    this.spent = costOf(this.def, 0); this.state = 'build'; this.bt = 0; this.cool = rr(.2, .8); this.mastery = 0; this.kills = 0; this.dealt = 0; this.alive = true; this.recent = 0;
     this.group = new THREE.Group(); this.group.position.set(this.x, this.y, this.z); this.group.rotation.y = this.yaw; R.scene.add(this.group);
     this.pieces = []; this.staticMesh = null; this.scaf = null; this.flame = null; this.flame2 = null; this.archers = []; this.men = []; this.respawn = 0;
     this.em = { x: this.x, y: this.y + 3, z: this.z, r: 1, g: .56, b: .26, I: 0, range: 13, on: 0, alive: true, seed: rnd() * 50, spot: kind !== 'spire', dx: this.sn, dz: this.cs, fl: 1, _spot: 0 };
@@ -174,7 +174,7 @@ class Tower {
     this.gunYaw = 0; this.recoil = 0; this.charge = 0; this.spin = rnd() * 6; this.hover = 0; this.appear = 0;
     this.begin();
   }
-  get range() { return this.def.range[this.lvl]; }
+  get range() { return rangeOf(this.def, this.lvl); }
   w(l, out) { out.x = this.x + l[0] * this.cs + l[2] * this.sn; out.y = this.y + l[1]; out.z = this.z - l[0] * this.sn + l[2] * this.cs; return out; }
   begin() {
     const bp = blueprint(this.kind, this.lvl); this.bp = bp; this.mounts = bp.mounts; this.bt = 0; this.state = this.lvl ? 'upgrade' : 'build';
@@ -205,7 +205,7 @@ class Tower {
     if (mt.flame) { const p = this.w(mt.flame, {}); this.flame = addFlame({ x: p.x, y: p.y, z: p.z, size: mt.flameSize, on: 0, layers: mt.flameSize > .7 ? 2 : 1, glow: 1 }); this.em.x = p.x; this.em.y = p.y + .25; this.em.z = p.z; this.em.r = 1; this.em.g = .56; this.em.b = .26; }
     if (mt.flame2) { const p = this.w(mt.flame2, {}); this.flame2 = addFlame({ x: p.x, y: p.y, z: p.z, size: mt.flameSize, on: 0 }); }
     if (mt.lightAt) { const p = this.w(mt.lightAt, {}); this.em.x = p.x; this.em.y = p.y; this.em.z = p.z; this.em.r = .45; this.em.g = .72; this.em.b = 1; }
-    this.em.I = d.light[lvl]; this.em.range = this.kind === 'archer' ? 12 : 10.5;
+    this.em.I = d.light[lvl] * (1 + .08 * this.mastery); this.em.range = this.kind === 'archer' ? 12 : 10.5;
     if (this.kind === 'archer') mt.archers.forEach((a, i) => this.archers.push({ l: a, yaw: this.yaw, draw: 0, cool: .4 + i * .3, e: { scale: .82, ph: 0, mv: 0, atk: -1, bow: true, draw: 0, pitch: 0, tint: [1, .9, .7], x: 0, y: 0, z: 0, yaw: 0, flash: 0 } }));
     if (this.kind === 'bombard') this.makeGun();
     if (this.kind === 'spire') this.makeCrystal();
@@ -236,7 +236,7 @@ class Tower {
     if (mt.rings) { const S = new Soup(); for (let k = 0; k < 7; k++) { if (k === 3) continue; const a = k / 7 * TAU; S.box(.5, .16, .2, Math.cos(a) * 1.0, 0, Math.sin(a) * 1.0, COL.basaltL, { l: L_ROCK, r: [0, -a + HPI, 0] }); } this.ringG = new THREE.Mesh(S.build(), MAT.world); this.ringG.castShadow = true; this.ringG.position.y = -1.25; this.crystal.add(this.ringG); }
     this.group.add(this.crystal);
   }
-  upgrade() { if (this.lvl >= 2 || this.state !== 'active') return false; this.lvl++; this.spent += this.def.cost[this.lvl]; for (const m of this.men) m.lvlUp = true; this.begin(); return true; }
+  upgrade() { if (this.lvl >= 2 || this.state !== 'active') return false; this.lvl++; this.spent += costOf(this.def, this.lvl); for (const m of this.men) m.lvlUp = true; this.begin(); return true; }
   sell() {
     this.alive = false; this.em.alive = false; this.em.on = 0; LT.emitters[this.idx] = null; this.pad.tower = null;
     for (let i = 0; i < 14; i++) { _tm.compose(_tv.set(this.x + rr(-.7, .7), this.y + rr(.3, 2.4), this.z + rr(-.7, .7)), _tq.set(rr(-1, 1), rr(-1, 1), rr(-1, 1), 1).normalize(), _ts.set(1, 1, 1)); addDebris(this.kind === 'archer' || this.kind === 'guard' ? KIT.plank : KIT.rubble, _tm, null, rr(-2, 2), rr(1, 4), rr(-2, 2), rr(3, 9), rr(2, 3.5)); }
@@ -265,15 +265,17 @@ class Tower {
     if (TOWER_STUN) { this.stun -= dt; const k = Math.min(1, this.stun * 2); FX.add.push(this.x, this.y + 1.7, this.z, 4.2, 5.6, 0, 0, .2, .5, 1.2, .3 * k, 2, 0, 0, 0); if (rnd() < dt * 5) { const a = rnd() * TAU, h = rr(.6, 3); fxBolt([this.x + Math.cos(a) * .8, this.y + h, this.z + Math.sin(a) * .8], [this.x + Math.cos(a + 1.2) * .8, this.y + h + rr(-.5, .5), this.z + Math.sin(a + 1.2) * .8], .12, [.5, .85, 1.5], .03); } if (rnd() < dt * 18) fxPart(this.x + rr(-.7, .7), this.y + rr(.4, 3.2), this.z + rr(-.7, .7), 0, rr(-.5, .1), 0, rr(.4, .9), rr(.05, .08), .6, 1.1, 2.0, { drag: .5 }); }
     this.em.on = damp(this.em.on, TOWER_STUN ? .12 : 1, TOWER_STUN ? 8 : 3, dt);
     if (this.flame) this.flame.on = this.em.on; if (this.flame2) this.flame2.on = this.em.on;
-    this.cool -= dt;
-    if (this.kind === 'archer') this.updArcher(dt, d, lvl);
-    else if (this.kind === 'bombard') this.updBombard(dt, d, lvl);
-    else if (this.kind === 'spire') this.updSpire(dt, d, lvl);
-    else this.updGuard(dt, d, lvl);
+    const hs = towerHaste(this), dtx = dt * hs; this.hasted = hs > 1;
+    if (hs > 1 && rnd() < dt * 2.4) fxPart(this.x + rr(-.6, .6), this.y + rr(.4, 2.6), this.z + rr(-.6, .6), 0, rr(.5, 1), 0, rr(.5, .9), .045, 2.6, 2.0, .7, { drag: .5 });
+    this.cool -= dtx;
+    if (this.kind === 'archer') this.updArcher(dtx, d, lvl);
+    else if (this.kind === 'bombard') this.updBombard(dtx, d, lvl);
+    else if (this.kind === 'spire') this.updSpire(dtx, d, lvl);
+    else this.updGuard(dtx, d, lvl);
     TOWER_STUN = false;
   }
   updArcher(dt, d, lvl) {
-    const tgt = findTarget(this.x, this.z, d.range[lvl], true, true);
+    const tgt = findTarget(this.x, this.z, this.range, true, true);
     for (const a of this.archers) {
       const p = this.w(a.l, _ap), e = a.e; e.x = p.x; e.y = p.y - (1 - easeOut(this.appear)) * .5; e.z = p.z; e.scale = .82 * (.3 + .7 * this.appear);
       a.cool -= dt;
@@ -284,7 +286,7 @@ class Tower {
         a.draw = a.cool < .34 ? Math.min(1, a.draw + dt * 3.6) : Math.max(0, a.draw - dt * 6);
         if (a.cool <= 0 && a.draw > .95) {
           a.cool = d.rate[lvl] * rr(.9, 1.12); a.draw = 0;
-          shootArrow(p.x + Math.sin(a.yaw) * .3, p.y + 1.0, p.z + Math.cos(a.yaw) * .3, tgt, d.dmg[lvl], this);
+          shootArrow(p.x + Math.sin(a.yaw) * .3, p.y + 1.0, p.z + Math.cos(a.yaw) * .3, tgt, towerDmg(this), this);
           sfx('bow', p.x, p.z, .6, rnd());
         }
       } else { a.draw = Math.max(0, a.draw - dt * 3); a.yaw = angDamp(a.yaw, this.yaw + Math.sin(G.t * .5 + a.l[0] * 3) * .5, 2, dt); e.pitch = damp(e.pitch, 0, 4, dt); if (a.cool < .3) a.cool = .3; }
@@ -293,7 +295,7 @@ class Tower {
     }
   }
   updBombard(dt, d, lvl) {
-    const tgt = findTarget(this.x, this.z, d.range[lvl], false, true, d.minRange);
+    const tgt = findTarget(this.x, this.z, this.range, false, true, d.minRange);
     this.recoil = Math.max(0, this.recoil - dt * 1.6);
     let aligned = false;
     if (tgt) {
@@ -303,7 +305,7 @@ class Tower {
         this.cool = d.rate[lvl] * rr(.95, 1.08); this.recoil = 1;
         this.carriage.updateMatrixWorld(true); const mz = _tv.set(0, 0, this.mounts.gunLen - .2).applyMatrix4(this.barrel.matrixWorld);
         const gy = G.B.heightAt(q.x, q.z);
-        G.shells.push({ x0: mz.x, y0: mz.y, z0: mz.z, tx: q.x, ty: Math.max(gy, q.y - tgt.hitH) + .05, tz: q.z, t: 0, T, dmg: d.dmg[lvl], splash: d.splash[lvl], tower: this, x: mz.x, y: mz.y, z: mz.z, sm: 0, arc: 1.5 + dist * .2 });
+        G.shells.push({ x0: mz.x, y0: mz.y, z0: mz.z, tx: q.x, ty: Math.max(gy, q.y - tgt.hitH) + .05, tz: q.z, t: 0, T, dmg: towerDmg(this), splash: d.splash[lvl] * MOD.splash, tower: this, x: mz.x, y: mz.y, z: mz.z, sm: 0, arc: 1.5 + dist * .2 });
         const dx = Math.sin(this.gunYaw), dz = Math.cos(this.gunYaw);
         lightFlash(mz.x, mz.y + .2, mz.z, 0xffc880, 420, .16, 15);
         fxTimed(5, mz.x + dx * .2, mz.y + .1, mz.z + dz * .2, 1.9, 1.9, 4, 3, 1.6, 1, .1); fxTimed(3, mz.x + dx * .3, mz.y + .12, mz.z + dz * .3, .9, .9, 4, 3.2, 2.2, 1, .2, { grow: .8 });
@@ -317,7 +319,7 @@ class Tower {
     if (this.cool > 0 && this.cool < 1.2 && rnd() < dt * 5) { this.carriage.updateMatrixWorld(true); const mz = _tv.set(0, 0, this.mounts.gunLen - .2).applyMatrix4(this.barrel.matrixWorld); fxSmoke(mz.x, mz.y, mz.z, rr(-.1, .1), rr(.3, .6), rr(-.1, .1), 1.2, .18, .35, .3, .3, .3, .22, { drag: 1 }); }
   }
   updSpire(dt, d, lvl) {
-    const tgt = findTarget(this.x, this.z, d.range[lvl], true, true);
+    const tgt = findTarget(this.x, this.z, this.range, true, true);
     const was = this.charge;
     this.charge = tgt ? Math.min(1, this.charge + dt / d.rate[lvl]) : Math.max(0, this.charge - dt * .25);
     if (was < .68 && this.charge >= .68 && tgt) sfx('charge', this.x, this.z, .5);
@@ -331,8 +333,8 @@ class Tower {
     FX.add.push(cp.x, cp.y, cp.z, 1.5 + c, 1.5 + c, 0, 0, .25, .55, 1.0, (.1 + .22 * c) * pulse, 2, 0, 0, 0);
     if (c > .5 && rnd() < dt * 14 * c) { const a = rnd() * TAU; fxBolt([cp.x, cp.y, cp.z], [cp.x + Math.cos(a) * .7, cp.y + rr(-.5, .5), cp.z + Math.sin(a) * .7], .1, [.45, .7, 1.4], .035); }
     if (c >= 1 && tgt) {
-      this.charge = 0; let from = [cp.x, cp.y, cp.z], cur = tgt, dmg = d.dmg[lvl]; const hit = [];
-      for (let j = 0; j < d.jumps[lvl] && cur; j++) {
+      this.charge = 0; let from = [cp.x, cp.y, cp.z], cur = tgt, dmg = towerDmg(this); const hit = [];
+      for (let j = 0; j < d.jumps[lvl] + MOD.jumps && cur; j++) {
         hit.push(cur); const to = [cur.x, cur.y + cur.hitH, cur.z];
         fxBolt(from, to, .26 - j * .015, [.5, .78, 1.6], .1 - j * .008);
         fxSparks(to[0], to[1], to[2], 5, 3.5, 1.2, 2, 4, { grav: 3, size: .06 }); fxTimed(2, to[0], to[1], to[2], 1.6, 1.6, .5, .9, 2, .7, .16);
@@ -347,7 +349,7 @@ class Tower {
   }
   updGuard(dt, d, lvl) {
     for (let i = this.men.length - 1; i >= 0; i--) if (this.men[i].gone) this.men.splice(i, 1);
-    if (this.men.length < d.n[lvl]) { this.respawn -= dt; if (this.respawn <= 0) { this.respawn = this.men.length === 0 && G.t < 4 ? .5 : d.rate[lvl]; spawnFootman(this); } }
+    if (this.men.length < guardCount(this)) { this.respawn -= dt; if (this.respawn <= 0) { this.respawn = this.men.length === 0 && G.t < 4 ? .5 : d.rate[lvl]; spawnFootman(this); } }
   }
   dispose() { this.alive = false; this.em.alive = false; LT.emitters[this.idx] = null; this.clearModel(false); R.scene.remove(this.group); this.pad.tower = null; }
 }
@@ -405,11 +407,23 @@ function explodeAt(x, y, z, dmg, splash, tower) {
   fxExplosion(x, y, z, sc);
   FX.decals.add(G.B.heightAt, x, z, splash * 1.2, .016, .013, .011, .85, 45);
   sfx('explode', x, z, 1, clamp(sc - .6, 0, 1));
+  const hits = []; let fire = false, shock = false, pin = false;
   for (const m of G.mons) {
     if (m.dead || m.hp <= 0 || m.fly || !m.vis) continue;
     const d = Math.hypot(m.x - x, m.z - z); if (d > splash + m.rad) continue;
-    const k = lerp(1, .45, sat(d / splash)), l = d || 1;
-    hitMonster(m, dmg * k, 'blast', (m.x - x) / l, (m.z - z) / l, tower);
+    hits.push(m, d); if (m.burnT > 0) fire = true;
   }
+  // Combos: Wildfire on burning foes, Thunderclap on shocked ones, Hammer and Anvil on pinned ones.
+  for (let i = 0; i < hits.length; i += 2) {
+    const m = hits[i], d = hits[i + 1], k = lerp(1, .45, sat(d / splash)), l = d || 1; let mul = 1;
+    if (fire) mul *= m.burnT > 0 ? 1 + .5 * MOD.combo : 1.1;
+    if (m.pinT > 0) { mul *= 1 + .45 * MOD.combo; pin = true; }
+    if (m.shockT > 0) { m.stunT = Math.max(m.stunT, (m.def.boss ? .45 : 1.25) * (1 - (m.def.slowRes || 0)) * (.6 + .4 * MOD.combo)); shock = true; }
+    const dead = hitMonster(m, dmg * k * mul, 'blast', (m.x - x) / l, (m.z - z) / l, tower, { raw: true });
+    if (fire && !dead) applyBurn(m, dmg * .45, tower, 3.5);
+  }
+  if (fire) { comboPop('wildfire', x, y + .9, z); fxTimed(3, x, y + .5, z, splash * 2.6, splash * 2.6, 5, 3.2, 1.6, 1, .55, { grow: 1.5 }); fxEmbers(x, y + .3, z, 26, splash * .7); }
+  if (shock) { comboPop('thunderclap', x, y + (fire ? 1.6 : .9), z); fxTimed(4, x, y + .1, z, splash * 3.2, splash * 3.2, .8, 1.5, 2.8, 1, .5, { ground: true }); lightFlash(x, y + 1, z, 0x9fd0ff, 420, .25, 14); }
+  if (pin) comboPop('anvil', x, y + (fire || shock ? 2.3 : .9), z);
   for (let i = 0; i < 5; i++) { _tm.compose(_tv.set(x + rr(-.3, .3), y + .2, z + rr(-.3, .3)), _tq.set(rr(-1, 1), rr(-1, 1), rr(-1, 1), 1).normalize(), _ts.set(.6, .6, .6)); addDebris(KIT.rubble, _tm, [.5, .45, .4], rr(-3, 3), rr(3, 6), rr(-3, 3), rr(4, 10), rr(1.6, 2.6)); }
 }

@@ -305,6 +305,17 @@ const AU = (function () {
     whoomp(d, t + 0.1, 0.5, 0.5);
     grains(d, t + 0.2, 7, 0.5, 0.12, 0.004, 0.02, 1800, 5000, 3, 1);
   };
+  S.levelUp = (d, t) => {
+    const lp = flt(d, 'lowpass', 7000);
+    [0, 4, 7, 12].forEach((n, i) => ding(lp, t + i * 0.09, 660 * Math.pow(2, n / 12), 0.26));
+    ding(lp, t + 0.42, 660 * Math.pow(2, 16 / 12), 0.3); whoomp(d, t, 0.35, 0.5);
+  };
+  S.combo = (d, t, p) => { const lp = flt(d, 'lowpass', 6000), f = 880 * Math.pow(2, Math.round(p * 5) * 2 / 12); ding(lp, t, f, 0.13); ding(lp, t + 0.06, f * 1.5, 0.1); };
+  S.relic = (d, t) => {
+    const lp = flt(d, 'lowpass', 6500);
+    [0, 7, 12, 19].forEach((n, i) => ding(lp, t + i * 0.13, 392 * Math.pow(2, n / 12), 0.24));
+    whoomp(d, t + 0.05, 0.4, 0.6);
+  };
   S.sell = (d, t) => {
     grains(d, t, 9, 0.42, 0.7, 0.03, 0.07, 280, 900, 6, 1);
     const g = gn(d), o = osc('sine', 110, t + 0.08, 0.25, g); sw(o.frequency, t + 0.08, 120, 55, 0.15); ad(g.gain, t + 0.08, 0.6, 0.004, 0.18);
@@ -425,6 +436,9 @@ const AU = (function () {
     beaconOut: [S.beaconOut, 1.5, 0.6, 3, 3.6, 0.85],
     ignite: [S.ignite, 0.15, 0.35, 2, 1.2, 0.7],
     splash: [S.splash, 0.09, 0.3, 0, 0.5, 0.5],
+    levelUp: [S.levelUp, 0.5, 0.4, 3, 1.2, 0.7],
+    combo: [S.combo, 0.5, 0.25, 1, 0.4, 0.5],
+    relic: [S.relic, 0.5, 0.45, 3, 1.4, 0.7],
   };
   const CAP = [16, 22, 28, 34];
 

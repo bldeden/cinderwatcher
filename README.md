@@ -4,9 +4,21 @@ A self-playing 3D isometric tower defense in a single HTML file.
 
 A handful of firelit towers hold the great beacon of a ruined keep against endless columns of monsters, across five lands from a dark mountain pass to a snowfield, a bog, a lava scar and a desert at dusk. An AI commander plays from the moment the page loads, and you can take over at any time.
 
-**[Play it in your browser](https://kevintngo.github.io/cinderwatch/)** · [Watch 20 seconds of gameplay](https://kevintngo.github.io/cinderwatch/media/gameplay-20s.mp4)
+**[Play it in your browser](https://bldeden.github.io/cinderwatcher/)** · A fork of [kevintngo/cinderwatch](https://github.com/kevintngo/cinderwatch); the media below shows the original.
 
 ![A bone giant falls apart between the towers](media/screenshot.jpg)
+
+## What this fork adds
+
+- **Six tower combos.** Arrows set foes alight, bolts shock them, swords pin them. A second tower that hits a foe in that state triggers a combo: Wildfire, Stormfire, Thunderclap, Skewer, Hammer and Anvil, Galvanize. Build menus show which combos a pad would unlock, and the AI commander places for them.
+- **Attack and armor types.** Piercing, siege, magic and normal attacks against unarmored, light, medium, heavy and fortified monsters.
+- **A run that carries on.** The Warden, a hero with levels, an aura and a fire nova, walks from land to land. After each boss you pick one of three relics (six slots). Part of your towers' cost is salvaged, up to 200 unspent gold comes along, and the beacon mends by 6 instead of resetting. Everything is lost when the beacon goes out.
+- **Mastery.** A third-level tower can be drilled five more times, 12% each, so late gold has somewhere to go.
+- **A console in the style of a classic fantasy RTS.** Beveled gold frames, a hero plate with health and experience bars, a relic satchel, a minimap you can click, floating combat text, and warnings when the beacon is attacked.
+- **A fix.** Ground-aligned effects (pad glows, shockwave rings, auras) were culled as back faces and never drew; they now do.
+- Monsters toughen by 35% per land to match. In test runs the AI commander usually falls somewhere in lands five to seven.
+
+New keys: `H` moves the Warden between the vanguard and the gate, `T` opens the tome of combos, `1` to `3` pick a relic, and `U` on a finished tower buys mastery.
 
 ## What is in it
 

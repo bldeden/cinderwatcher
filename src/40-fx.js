@@ -191,7 +191,7 @@ class SpriteBatch {
     if (lit) { uniforms.uLightPos = { value: R.lightPos }; uniforms.uLightCol = { value: R.lightCol }; uniforms.uAmb = { value: new THREE.Vector3(.05, .065, .1) }; }
     const m = new THREE.ShaderMaterial({
       vertexShader: SPR_VERT, fragmentShader: lit ? SPR_FRAG_ALPHA : SPR_FRAG_ADD, uniforms, defines: lit ? { LIT: 1 } : {},
-      transparent: true, depthWrite: false, depthTest: true,
+      transparent: true, depthWrite: false, depthTest: true, side: THREE.DoubleSide,
       blending: lit ? THREE.NormalBlending : THREE.CustomBlending, blendSrc: THREE.OneFactor, blendDst: THREE.OneFactor, blendEquation: THREE.AddEquation,
     });
     this.mesh = new THREE.Mesh(g, m); this.mesh.frustumCulled = false; this.mesh.renderOrder = lit ? 3 : 4; this.geo = g;
