@@ -385,7 +385,7 @@ const UI = (() => {
       c.beginPath(); [[-BH, -BH], [BH, -BH], [BH, BH], [-BH, BH]].forEach((q, i) => { const p2 = mp2(q[0], q[1]); if (i) c.lineTo(p2[0], p2[1]); else c.moveTo(p2[0], p2[1]); }); c.closePath(); c.fillStyle = 'rgba(58,62,54,0.9)'; c.fill();
       c.beginPath(); for (let i = 0; i < B.n; i += 3) { const p2 = mp2(B.px[i], B.pz[i]); if (i) c.lineTo(p2[0], p2[1]); else c.moveTo(p2[0], p2[1]); } c.strokeStyle = '#a58a58'; c.lineWidth = 2.4 * s; c.lineJoin = c.lineCap = 'round'; c.stroke();
       const KC = { archer: '#f4c450', bombard: '#c9c2b2', spire: '#8fc7ff', guard: '#6f9be0' };
-      for (const p2 of B.pads) { if (p2.tower) { dot(p2.x, p2.z, 3 * s + 2, COLR.edge); dot(p2.x, p2.z, 3 * s, KC[p2.tower.kind]); } else dot(p2.x, p2.z, 2 * s, '#5b6472'); }
+      for (const p2 of B.pads) { if (p2.tower) { dot(p2.x, p2.z, 3 * s + 2, COLR.edge); dot(p2.x, p2.z, 3 * s, KC[p2.tower.kind]); } else dot(p2.x, p2.z, p2.boon ? 3 * s : 2 * s, p2.boon ? PAD_BOON[p2.boon].hex : '#5b6472'); }
       dot(B.beacon.x, B.beacon.z, 4 * s, '#ff8a3c'); dot(B.beacon.x, B.beacon.z, 2 * s, '#ffe2a0');
       for (const m of G.mons) if (!m.dead && (m.vis || m.fly)) dot(m.x, m.z, m.def.boss ? 4 * s : Math.max(2, s + 1), m.def.boss ? '#ff3a2a' : '#ff6a55');
       for (const f2 of G.men) if (!f2.dead) dot(f2.x, f2.z, f2.hero ? 3 * s : Math.max(2, s + 1), f2.hero ? '#7dff6a' : '#8fc7ff');
@@ -413,6 +413,7 @@ const UI = (() => {
       PX.icon(c, 'coin', Math.round(px - 4 * s * .75), Math.round(py - 4 * s * .75), Math.max(2, s - 1), 1);
       if (u >= 1) { U.goldShown = Math.min(G.gold, U.goldShown + q.value); U.goldBump = 1; sfx('coin', CAM.x, CAM.z, .35, rnd()); U.coins.splice(i, 1); }
     }
+    if (G.phase === 'play' && G.B) for (const p of G.B.pads) { if (!p.boon || p.tower || (U.menu && U.menu.pad === p)) continue; const q = proj(p.x, p.y + 1.5, p.z), k = Math.max(1, s - 1); c.globalAlpha = .9; PX.text(c, PAD_BOON[p.boon].name, Math.round(q.x), Math.round(q.y), k, PAD_BOON[p.boon].hex, { align: 'c', outline: COLR.dark }); c.globalAlpha = 1; }
     for (let i = RUN.texts.length - 1; i >= 0; i--) {
       const q = RUN.texts[i]; if (!G.paused) q.t += R.frameDt; if (q.t >= q.dur) { RUN.texts.splice(i, 1); continue; }
       const u = q.t / q.dur, p = proj(q.x, q.y + q.rise * (1 - (1 - u) * (1 - u)), q.z), k = q.big ? s + 1 : Math.max(2, s - (s > 3 ? 1 : 0)), pop = q.t < .12 ? 1 : 0;
@@ -438,10 +439,10 @@ const UI = (() => {
         let lit = null; const fk = U.gp.active ? TOWER_KINDS[m.focus % 4] : null;
         const cmbL = k => { const ids = combosAt(m.pad, k); return ids.length ? wrap('Combos: ' + ids.map(id => COMBO[id].short || COMBO[id].name).join(', '), 31 * 6 * s) : ['No combo partner in reach.']; };
         const lines = k => k ? [TOWER[k].name].concat(TOWER[k].desc, [ATK_HINT[TOWER[k].atk]], cmbL(k)) : tch ? ['Choose a tower', 'Tap one to see what it does,', 'then tap it again to build.'] : ['Choose a tower', 'Hover or press 1 to 4', 'to see what each does.'];
-        let textW = tw('Tap again to build'); for (const k of [null].concat(TOWER_KINDS)) for (const l of lines(k)) textW = Math.max(textW, tw(l));
+        let textW = Math.max(tw('Tap again to build'), m.pad.boon ? tw(PAD_BOON[m.pad.boon].name + ': ' + PAD_BOON[m.pad.boon].short) : 0); for (const k of [null].concat(TOWER_KINDS)) for (const l of lines(k)) textW = Math.max(textW, tw(l));
         const wP = Math.max(rowW, textW) + mp * 2, hP = mp * 2 + LH + 3 * s + bh + 4 * s + LH * 6 + 3 * s + (tch ? LH + s : 0), [px, py] = place(wP, hP);
         U.menuRect = { x: px, y: py, w: wP, h: hP };
-        plate(px, py, wP, hP); text('Build here', px + mp, py + mp - s, COLR.amber);
+        plate(px, py, wP, hP); text(m.pad.boon ? PAD_BOON[m.pad.boon].name + ': ' + PAD_BOON[m.pad.boon].short : 'Build here', px + mp, py + mp - s, m.pad.boon ? PAD_BOON[m.pad.boon].hex : COLR.amber);
         const bx0 = px + Math.round((wP - rowW) / 2), by = py + mp + LH + 3 * s;
         TOWER_KINDS.forEach((kind, i) => {
           const d = TOWER[kind], can = G.gold >= costOf(d, 0), bx = bx0 + i * (bwid + gapb);
@@ -457,22 +458,33 @@ const UI = (() => {
         if (ls[3]) text(ls[3], px + mp, ty + LH * 3 + 2 * s, COLR.cold); for (let q = 4; q < ls.length && q < 6; q++) text(ls[q], px + mp, ty + LH * q + 2 * s, ls[4][0] === 'C' ? COLR.ok : COLR.dim);
         if (tch && m.sel) { const can = G.gold >= costOf(TOWER[m.sel], 0); text(can ? 'Tap again to build' : 'Not enough gold yet', px + mp, ty + LH * 6 + 3 * s, can ? COLR.amber : COLR.red); }
       } else {
-        const t = m.tower, d = t.def, maxed = t.lvl >= 2, done = maxed && t.mastery >= MASTERY_MAX, upc = done ? 0 : maxed ? masteryCost(t) : costOf(d, t.lvl + 1), can = !done && G.gold >= upc && t.state === 'active', refund = Math.round(t.spent * .6), L1 = t.lvl + 1;
-        const ul = done ? 'Mastered' : maxed ? 'Master ' + upc : 'Upgrade ' + upc, sl = m.sellArm ? 'Confirm +' + refund : 'Sell +' + refund, iw9 = 9 * s, bw3 = Math.max(tw(ul), tw(sl), tw('Confirm +' + refund)) + iw9 + 11 * s, bh = (tch ? 24 : 15) * s, by0 = Math.round((bh - LH) / 2);
-        const st = t.kind === 'guard' ? guardCount(t) + ' footmen · ' + Math.round(d.hp[t.lvl] * MOD.guardHp) + ' health' : 'Range ' + rangeOf(d, t.lvl).toFixed(1) + ' · Damage ' + Math.round(towerDmg(t)) + (t.hasted ? ' · Watchfire' : '');
-        const nx = maxed ? (done ? 'Mastery V' : 'Mastery ' + t.mastery + '/5: each rank +12%') + ' · ' + t.kills + ' kills' : (t.kind === 'guard' ? 'Next: ' + Math.min(4, d.n[L1] + MOD.guardN) + ' footmen · ' + Math.round(d.hp[L1] * MOD.guardHp) + ' health' : 'Next: range ' + rangeOf(d, L1).toFixed(1) + ' · damage ' + Math.round(d.dmg[L1] * MOD.dmg[t.kind]));
-        const cids = combosAt(t.pad, t.kind, t), cls = wrap(ATK_NAME[d.atk] + ' attack · ' + (cids.length ? cids.map(id => COMBO[id].short || COMBO[id].name).join(', ') : 'no combo partner in reach'), Math.max(bw3 * 2 + 3 * s, 30 * 6 * s)); let clw = 0; for (const l of cls) clw = Math.max(clw, tw(l));
-        const wP = Math.max(bw3 * 2 + 3 * s, tw(d.name) + 26 * s, tw(st), tw(nx), clw) + mp * 2, xl2 = LH * cls.length + s, hP = mp * 2 + LH * 3 + 6 * s + bh + xl2, [px, py] = place(wP, hP);
+        const t = m.tower, d = t.def, maxed = t.lvl >= 2, br = branchOf(t), choose = maxed && !br, done = maxed, upc = maxed ? branchCost() : costOf(d, t.lvl + 1), can = !maxed && G.gold >= upc && t.state === 'active', canB = choose && G.gold >= upc && t.state === 'active', BR = BRANCH[t.kind], arm = choose ? (m.specArm || (U.hotBtn && U.hotBtn.id === 'specA' ? 'a' : U.hotBtn && U.hotBtn.id === 'specB' ? 'b' : null)) : null, refund = Math.round(t.spent * .6), L1 = t.lvl + 1;
+        const ul = maxed ? (br ? br.name : 'Max level') : 'Upgrade ' + upc, sl = m.sellArm ? 'Confirm +' + refund : 'Sell +' + refund, iw9 = 9 * s, bw3 = Math.max(tw(ul), tw(sl), tw('Confirm +' + refund), choose ? Math.max(tw(BR.a.name), tw(BR.b.name)) : 0) + iw9 + 11 * s, bh = (tch ? 24 : 15) * s, by0 = Math.round((bh - LH) / 2);
+        const st = t.kind === 'guard' ? guardCount(t) + ' footmen · ' + Math.round(guardHp(t)) + ' health' : 'Range ' + t.range.toFixed(1) + ' · Damage ' + Math.round(towerDmg(t)) + (t.hasted ? ' · Watchfire' : '');
+        const nx = maxed ? (choose ? 'Choose a path: ' + upc + ' gold. It is final.' : br.name + ' · ' + t.kills + ' kills') : (t.kind === 'guard' ? 'Next: ' + Math.min(4, d.n[L1] + MOD.guardN) + ' footmen · ' + Math.round(d.hp[L1] * MOD.guardHp) + ' health' : 'Next: range ' + rangeOf(d, L1).toFixed(1) + ' · damage ' + Math.round(d.dmg[L1] * MOD.dmg[t.kind]));
+        const cids = combosAt(t.pad, t.kind, t), cls = wrap(ATK_NAME[d.atk] + ' attack · ' + (cids.length ? cids.map(id => COMBO[id].short || COMBO[id].name).join(', ') : 'no combo partner in reach') + (t.pad.boon ? ' · ' + PAD_BOON[t.pad.boon].name : ''), Math.max(bw3 * 2 + 3 * s, 30 * 6 * s)); let clw = 0; for (const l of cls) clw = Math.max(clw, tw(l));
+        const bl = choose ? (arm ? BR[arm].desc.concat([m.specArm ? (canB ? (tch ? 'Tap it again to commit.' : 'Click it again to commit.') : 'Not enough gold yet.') : '']) : [tch ? 'Tap a path to read it,' : 'Click a path to read it,', 'then again to commit.', '']) : []; for (const l of bl) clw = Math.max(clw, tw(l));
+        const wP = Math.max(bw3 * 2 + 3 * s, tw(d.name) + 26 * s, tw(st), tw(nx), clw) + mp * 2, xl2 = LH * (cls.length + bl.length) + s, hP = mp * 2 + LH * 3 + 6 * s + bh + xl2 + (choose ? bh + 3 * s : 0), [px, py] = place(wP, hP);
         U.menuRect = { x: px, y: py, w: wP, h: hP };
         plate(px, py, wP, hP); text(d.name, px + mp, py + mp - s, COLR.amber);
         for (let i = 0; i < 3; i++) PX.icon(c, i <= t.lvl ? 'star' : 'starEmpty', px + wP - mp - (3 - i) * 6 * s, py + mp, s);
-        text(st, px + mp, py + mp + LH + s, COLR.tx); text(nx, px + mp, py + mp + LH * 2 + 2 * s, done ? COLR.dim : COLR.ok);
+        text(st, px + mp, py + mp + LH + s, COLR.tx); text(nx, px + mp, py + mp + LH * 2 + 2 * s, choose ? COLR.amber : done ? COLR.dim : COLR.ok);
+        bl.forEach((l, k) => text(l, px + mp, py + mp + LH * (3 + cls.length + k) + 3 * s, k === 2 ? (canB ? COLR.ok : COLR.red) : arm ? COLR.tx : COLR.dim));
         cls.forEach((l, k) => text(l, px + mp, py + mp + LH * (3 + k) + 3 * s, cids.length ? COLR.cold : COLR.dim));
         const by = py + mp + LH * 3 + 6 * s + xl2, bwf = Math.floor((wP - mp * 2 - 3 * s) / 2);
-        let r = button(px + mp, by, bwf, bh, 'up', can, () => doUpgrade(t), null, false);
-        PX.icon(c, 'upgrade', px + mp + 4 * s, by + by0 + r.dy, s, can ? 1 : .4); text(ul, px + mp + 4 * s + iw9 + 3 * s, by + by0 + r.dy, can ? COLR.tx : (done ? COLR.dim : COLR.red));
-        r = button(px + mp + bwf + 3 * s, by, bwf, bh, 'sell', true, () => { if (!m.sellArm) { m.sellArm = true; sfx('uiHover', t.x, t.z, .8); } else { buzz(16); doSell(t); } }, null, m.sellArm);
-        PX.icon(c, 'sell', px + mp + bwf + 7 * s, by + by0 + r.dy, s); text(sl, px + mp + bwf + 7 * s + iw9 + 3 * s, by + by0 + r.dy, m.sellArm ? COLR.ember : COLR.tx);
+        let r, sx = px + mp + bwf + 3 * s, sy = by, sw = bwf;
+        if (choose) {
+          ['a', 'b'].forEach((w, k) => {
+            const bx = px + mp + k * (bwf + 3 * s), q = button(bx, by, bwf, bh, 'spec' + w.toUpperCase(), canB, () => { if (m.specArm !== w) { m.specArm = w; sfx('uiHover', t.x, t.z, .8); } else if (specTower(t, w)) { sfx('uiClick', t.x, t.z, .8); buzz(16); m.specArm = null; } else deny(); }, null, m.specArm === w);
+            text(BR[w].name, bx + bwf / 2, by + by0 + q.dy, canB ? (m.specArm === w ? COLR.amber : COLR.tx) : COLR.red, { align: 'c' });
+          });
+          sx = px + mp; sy = by + bh + 3 * s; sw = wP - mp * 2;
+        } else {
+          r = button(px + mp, by, bwf, bh, 'up', can, () => doUpgrade(t), null, false);
+          PX.icon(c, 'upgrade', px + mp + 4 * s, by + by0 + r.dy, s, can ? 1 : .4); text(ul, px + mp + 4 * s + iw9 + 3 * s, by + by0 + r.dy, can ? COLR.tx : (done ? COLR.dim : COLR.red));
+        }
+        r = button(sx, sy, sw, bh, 'sell', true, () => { if (!m.sellArm) { m.sellArm = true; sfx('uiHover', t.x, t.z, .8); } else { buzz(16); doSell(t); } }, null, m.sellArm);
+        PX.icon(c, 'sell', sx + 4 * s, sy + by0 + r.dy, s); text(sl, sx + 4 * s + iw9 + 3 * s, sy + by0 + r.dy, m.sellArm ? COLR.ember : COLR.tx);
       }
       c.globalAlpha = 1;
     }
@@ -503,6 +515,8 @@ const UI = (() => {
         for (const id of COMBO_IDS) { const cb = COMBO[id], nn = RUN.combos[id] || 0; L.push([cb.name + ' · ' + TOWER[cb.pair[0]].short + ' + ' + TOWER[cb.pair[1]].short + (nn ? '   x' + nn : ''), cb.col]); para(cb.desc, COLR.dim); }
         L.push(null); L.push(['Arms and armor', COLR.amber]);
         para('Piercing (arrows): strong against light armor, weak against heavy and fortified.', COLR.tx); para('Siege (shells): strong against fortified, weak against light.', COLR.tx); para('Magic (bolts, fire): strong against heavy, weak against fortified.', COLR.tx); para('Normal (swords): steady, best against medium. Bosses feel half of any strength or weakness.', COLR.tx);
+        L.push(null); L.push(['Paths, pads and interest', COLR.amber]);
+        para('A third-level tower chooses one of two paths for ' + branchCost() + ' gold, and the choice is final. Glowing pads are special: high ground adds range, a rune stone strengthens combos, a gold vein pays more per kill. Unspent gold earns 8% interest after each wave, up to 40.', COLR.tx);
         L.push(null); L.push(['The march', COLR.amber]);
         para('After each boss, choose one of three relics. Some of what your towers cost is salvaged, unspent gold up to 200 comes along, and the beacon mends by 6 instead of being relit. The Warden keeps every level, and the Warden\'s sword pins foes like a footman\'s. All of it is lost when the beacon goes out.', COLR.tx);
         L.push(null); L.push([tch ? 'Tap anywhere to close' : 'T or a click closes this', COLR.dim]);

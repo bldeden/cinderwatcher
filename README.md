@@ -13,13 +13,15 @@ A handful of firelit towers hold the great beacon of a ruined keep against endle
 - **Six tower combos.** Arrows set foes alight, bolts shock them, swords pin them. A second tower that hits a foe in that state triggers a combo: Wildfire, Stormfire, Thunderclap, Skewer, Hammer and Anvil, Galvanize. Build menus show which combos a pad would unlock, and the AI commander places for them.
 - **Attack and armor types.** Piercing, siege, magic and normal attacks against unarmored, light, medium, heavy and fortified monsters.
 - **A run that carries on.** The Warden, a hero with levels, an aura and a fire nova, walks from land to land. After each boss you pick one of three relics (six slots). Part of your towers' cost is salvaged, up to 200 unspent gold comes along, and the beacon mends by 6 instead of resetting. Everything is lost when the beacon goes out.
-- **Mastery.** A third-level tower can be drilled five more times, 12% each, so late gold has somewhere to go.
+- **Branching towers.** At its third level a tower commits, for 200 gold and for good, to one of two paths: Longbows or Fire Volley, Siege Mortar or Grapeshot, Tempest or Frost Spire, Knights or Militia. Frost Spire trades the shock combos for a seventh, Shatter.
+- **Special pads.** Three or four pads in every land glow: high ground adds 20% range, a rune stone makes combos hit 30% harder, a gold vein pays 25% more per kill.
+- **Interest.** Unspent gold earns 8% after each wave, up to 40.
 - **A console in the style of a classic fantasy RTS.** Beveled gold frames, a hero plate with health and experience bars, a relic satchel, a minimap you can click, floating combat text, and warnings when the beacon is attacked.
 - **Sunlit lands and a day that turns.** Each land starts in daylight with fuller color, slides to dusk on the fourth wave and to night for the boss. Buildings carry blue roofs and gold trim. On a desktop the foot of the screen is a full console: minimap, hero panel, relic satchel, command row and a sun-and-moon medallion.
 - **A fix.** Ground-aligned effects (pad glows, shockwave rings, auras) were culled as back faces and never drew; they now do.
-- Monsters toughen by 35% per land to match. In test runs the AI commander usually falls somewhere in lands five to seven.
+- Monsters toughen by 38% per land to match. In test runs the AI commander usually falls in land six.
 
-New keys: `H` moves the Warden between the vanguard and the gate, `T` opens the tome of combos, `1` to `3` pick a relic, and `U` on a finished tower buys mastery.
+New keys: `H` moves the Warden between the vanguard and the gate, `T` opens the tome of combos, `1` to `3` pick a relic.
 
 ## What is in it
 

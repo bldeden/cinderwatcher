@@ -36,7 +36,7 @@ function spawnMonster(type, o = {}) {
     x: 0, y: 0, z: 0, yaw: 0, ph: rnd() * 6, mv: 1, vf: def.spd, spdNow: def.spd, spdMul: rr(.93, 1.07) * (o.spdMul || 1), slowT: 0, slowF: 0,
     flash: 0, flinch: 0, atk: -1, cd: rr(.1, .5), foe: null, prog: 0, vis: false, dead: false, dying: 0, ks: 0, kl: 0, hop: rnd(), rad: def.rad * (o.radMul || 1), mass: def.mass,
     hitH: def.hitH, scale: def.scale * rr(.95, 1.05), fly: !!def.fly, torch: false, flame: null, tint: (bt && bt[type]) || def.tint || null, men: 0, struck: false, step: 0, alive: true, lI: 0, lx: 0, ly: 0, lz: 0, lseed: rnd() * 9, vx: 0, vz: 0, pop: o.pop || 0,
-    burnT: 0, burnDps: 0, burnBy: null, shockT: 0, pinT: 0, stunT: 0, arcAt: -9,
+    burnT: 0, burnDps: 0, burnBy: null, shockT: 0, pinT: 0, stunT: 0, chillT: 0, stunAt: -9, arcAt: -9,
     haste: 0, hitAt: -9, beat: rnd() * 6, eth: false, gT: rnd() * 4, cast: 0, sumN: 0, sumT: def.summon ? def.summon.every * rr(.45, .7) : 0, stT: def.stomp ? def.stomp.every * .6 : 0, rage: false,
   };
   m.home = m.lane = m.lat;
@@ -61,12 +61,17 @@ function hitMonster(m, dmg, kind, dx, dz, tower, o) {
   if (!raw) {
     if (kind === 'arrow') {
       // Skewer: a pinned foe is an easy mark. Stormfire: fire on a shocked foe arcs.
-      if (m.pinT > 0) { mul = Math.max(mul, 1) * (1 + .6 * MOD.combo); comboPop('skewer', m.x, hy, m.z); fxSparks(m.x, hy, m.z, 6, 4, 3, 1.4, 1.0, { size: .06, grav: 6 }); }
+      const as = tower && tower.kind === 'archer' ? tower.spec : null; if (as === 'a' && m.fly) mul *= 1.5;
+      if (m.pinT > 0) { mul = Math.max(mul, 1) * (1 + .6 * comboMul(tower)); comboPop('skewer', m.x, hy, m.z); fxSparks(m.x, hy, m.z, 6, 4, 3, 1.4, 1.0, { size: .06, grav: 6 }); }
       if (m.shockT > 0 && G.t - m.arcAt > .45) { m.arcAt = G.t; stormfire(m, dmg, tower); }
-      applyBurn(m, dmg, tower);
+      if (as === 'b') {
+        applyBurn(m, dmg * 1.5, tower, 5); fxTimed(3, m.x, hy, m.z, 1.6, 1.6, 4, 2.2, .8, 1, .25, { grow: 1 });
+        for (const q of G.mons) { if (q === m || q.dead || q.hp <= 0 || !q.vis || dist2(m.x, m.z, q.x, q.z) > 1.9) continue; if (!hitMonster(q, dmg * .5, 'arrow', 0, 0, tower, { raw: true })) applyBurn(q, dmg * 1.5, tower, 5); }
+      } else applyBurn(m, dmg, tower);
     } else if (kind === 'sword') {
       // Galvanize: a blade discharges a shocked foe.
-      if (m.shockT > 0) { dmg += dmg * .8 * MOD.combo * typeMul('bolt', m) / mul; slowMonster(m, .4, 1.3); m.shockT += .6; comboPop('galvanize', m.x, hy, m.z); fxBolt([m.x, hy + .7, m.z], [m.x, hy - .2, m.z], .16, [.5, 1.3, 1.7], .07); }
+      if (tower && tower.spec === 'a' && tower.kind === 'guard' && G.t - m.stunAt > 2.5) { m.stunAt = G.t; m.stunT = Math.max(m.stunT, m.def.boss ? .15 : .5); }
+      if (m.shockT > 0) { dmg += dmg * .8 * comboMul(tower) * typeMul('bolt', m) / mul; slowMonster(m, .4, 1.3); m.shockT += .6; comboPop('galvanize', m.x, hy, m.z); fxBolt([m.x, hy + .7, m.z], [m.x, hy - .2, m.z], .16, [.5, 1.3, 1.7], .07); }
       m.pinT = Math.max(m.pinT, 2.4);
     } else if (kind === 'bolt') m.shockT = Math.max(m.shockT, 3 + MOD.shockT);
   }
@@ -118,7 +123,7 @@ function killMonster(m, kind, dx, dz, tower) {
   }
   if (def.split && G.mons.length < 90) { const [ty, n] = def.split; for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) * 2 - 1 : 0; spawnMonster(ty, { s: Math.max(.5, m.s - .15 - .1 * Math.abs(u)), lat: clamp(m.lat + u * .34, -.95, .95), hpMul: m.maxHp / def.hp, pop: 1 }).kl = u * 2.2; } }
   if (m.torch && m.flame) fxEmbers(m.flame.x, m.flame.y, m.flame.z, 8, .15);
-  dropCoins(m.x, m.y + m.hitH * .6, m.z, Math.round(def.bounty * G.bountyMul * MOD.bounty), clamp(Math.round(def.bounty / 3), 1, 6));
+  dropCoins(m.x, m.y + m.hitH * .6, m.z, Math.round(def.bounty * G.bountyMul * MOD.bounty * (boonOf(tower) === 'vein' ? 1.25 : 1)), clamp(Math.round(def.bounty / 3), 1, 6));
   removeMonster(m);
   if (def.explode) blastAround(m, def.explode);
 }
@@ -179,7 +184,7 @@ function spawnFootman(tower) {
   const used = tower.men.map(f => f.slot); let slot = 0; while (used.includes(slot)) slot++;
   const f = {
     isMan: true, tower, slot, x: door.x, y: door.y, z: door.z, yaw: tower.yaw, ph: 0, mv: 0, atk: -1, flinch: 0, flash: 0, hp: tower.isKeep ? 1 : guardHp(tower), maxHp: tower.isKeep ? 1 : guardHp(tower), dmg: tower.isKeep ? 1 : guardDmg(tower),
-    rad: .26, mass: 7, s: tower.pad.s, lat: 0, onRoad: false, state: 'march', target: null, cd: rr(.2, .6), torch: slot === 0, gone: false, dead: false, vf: 0, scale: .9 + lvl * .05,
+    rad: .26, mass: 7, s: tower.pad.s, lat: 0, onRoad: false, state: 'march', target: null, cd: rr(.2, .6), torch: slot === 0, gone: false, dead: false, vf: 0, scale: (.9 + lvl * .05) * (tower.spec === 'a' ? 1.16 : tower.spec === 'b' ? .92 : 1),
     struck: false, alive: true, lI: slot === 0 ? 32 : 0, lx: 0, ly: 0, lz: 0, lseed: rnd() * 9, flame: null, leave: false, lvlUp: false, weapon: null, shield: null, age: 0, foes: 0,
   };
   if (f.torch) f.flame = addFlame({ x: door.x, y: -50, z: door.z, size: .34, embers: .45, glow: .8 });
@@ -193,7 +198,7 @@ function killFootman(f, dx, dz) {
   fxDust(f.x, f.y + .1, f.z, 3, .5, { a: .35 }); sfx('footmanDie', f.x, f.z, .8);
 }
 function slotPos(f, out) {
-  const B = G.B, n = guardCount(f.tower), lat = (n === 1 ? [0] : n === 2 ? [-.48, .48] : n === 3 ? [-.66, 0, .66] : [-.8, -.27, .27, .8])[f.slot % n] || 0;
+  const B = G.B, n = guardCount(f.tower), lat = n === 1 ? 0 : n === 2 ? [-.48, .48][f.slot % 2] : -.85 + 1.7 * (f.slot % n) / (n - 1);
   const p = pathAt(B, f.tower.pad.s, out); p.x += -p.tz * lat; p.z += p.tx * lat; return p;
 }
 const _fp = { x: 0, y: 0, z: 0, tx: 0, tz: 0 };
@@ -256,6 +261,7 @@ function drawFootman(f) {
     rigHuman(KIT.foot, SPEC.foot, f); heroDraw(f);
     G.hbars.push({ x: f.x, y: f.y + 1.75 * f.scale, z: f.z, f: sat(f.hp / f.maxHp), boss: false, man: true, hero: true }); return;
   }
+  if (f.tower.spec === 'a') f.plate = true;
   f.weapon = KIT.item.blade; f.shield = f.torch ? null : KIT.item.shieldH; f.wScale = 1;
   rigHuman(KIT.foot, SPEC.foot, f);
   if (f.torch && f.flame) { const p = RIGOUT.torch; f.flame.x = p.x; f.flame.y = p.y; f.flame.z = p.z; f.lx = p.x; f.ly = p.y + .2; f.lz = p.z; }

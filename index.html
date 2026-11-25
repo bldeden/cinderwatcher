@@ -3122,7 +3122,7 @@ class Tower {
   constructor(pad, kind, idx) {
     this.pad = pad; this.kind = kind; this.idx = idx; this.lvl = 0; this.def = TOWER[kind];
     this.x = pad.x; this.y = pad.y; this.z = pad.z; this.yaw = pad.face; this.cs = Math.cos(this.yaw); this.sn = Math.sin(this.yaw);
-    this.spent = costOf(this.def, 0); this.state = 'build'; this.bt = 0; this.cool = rr(.2, .8); this.mastery = 0; this.kills = 0; this.dealt = 0; this.alive = true; this.recent = 0;
+    this.spent = costOf(this.def, 0); this.state = 'build'; this.bt = 0; this.cool = rr(.2, .8); this.spec = null; this.kills = 0; this.dealt = 0; this.alive = true; this.recent = 0;
     this.group = new THREE.Group(); this.group.position.set(this.x, this.y, this.z); this.group.rotation.y = this.yaw; R.scene.add(this.group);
     this.pieces = []; this.staticMesh = null; this.scaf = null; this.flame = null; this.flame2 = null; this.archers = []; this.men = []; this.respawn = 0;
     this.em = { x: this.x, y: this.y + 3, z: this.z, r: 1, g: .56, b: .26, I: 0, range: 13, on: 0, alive: true, seed: rnd() * 50, spot: kind !== 'spire', dx: this.sn, dz: this.cs, fl: 1, _spot: 0 };
@@ -3130,7 +3130,7 @@ class Tower {
     this.gunYaw = 0; this.recoil = 0; this.charge = 0; this.spin = rnd() * 6; this.hover = 0; this.appear = 0;
     this.begin();
   }
-  get range() { return rangeOf(this.def, this.lvl); }
+  get range() { return towerRange(this); }
   w(l, out) { out.x = this.x + l[0] * this.cs + l[2] * this.sn; out.y = this.y + l[1]; out.z = this.z - l[0] * this.sn + l[2] * this.cs; return out; }
   begin() {
     const bp = blueprint(this.kind, this.lvl); this.bp = bp; this.mounts = bp.mounts; this.bt = 0; this.state = this.lvl ? 'upgrade' : 'build';
@@ -3161,7 +3161,7 @@ class Tower {
     if (mt.flame) { const p = this.w(mt.flame, {}); this.flame = addFlame({ x: p.x, y: p.y, z: p.z, size: mt.flameSize, on: 0, layers: mt.flameSize > .7 ? 2 : 1, glow: 1 }); this.em.x = p.x; this.em.y = p.y + .25; this.em.z = p.z; this.em.r = 1; this.em.g = .56; this.em.b = .26; }
     if (mt.flame2) { const p = this.w(mt.flame2, {}); this.flame2 = addFlame({ x: p.x, y: p.y, z: p.z, size: mt.flameSize, on: 0 }); }
     if (mt.lightAt) { const p = this.w(mt.lightAt, {}); this.em.x = p.x; this.em.y = p.y; this.em.z = p.z; this.em.r = .45; this.em.g = .72; this.em.b = 1; }
-    this.em.I = d.light[lvl] * (1 + .08 * this.mastery); this.em.range = this.kind === 'archer' ? 12 : 10.5;
+    this.em.I = d.light[lvl]; this.em.range = this.kind === 'archer' ? 12 : 10.5;
     if (this.kind === 'archer') mt.archers.forEach((a, i) => this.archers.push({ l: a, yaw: this.yaw, draw: 0, cool: .4 + i * .3, e: { scale: .82, ph: 0, mv: 0, atk: -1, bow: true, draw: 0, pitch: 0, tint: [1, .9, .7], x: 0, y: 0, z: 0, yaw: 0, flash: 0 } }));
     if (this.kind === 'bombard') this.makeGun();
     if (this.kind === 'spire') this.makeCrystal();
@@ -3221,7 +3221,7 @@ class Tower {
     if (TOWER_STUN) { this.stun -= dt; const k = Math.min(1, this.stun * 2); FX.add.push(this.x, this.y + 1.7, this.z, 4.2, 5.6, 0, 0, .2, .5, 1.2, .3 * k, 2, 0, 0, 0); if (rnd() < dt * 5) { const a = rnd() * TAU, h = rr(.6, 3); fxBolt([this.x + Math.cos(a) * .8, this.y + h, this.z + Math.sin(a) * .8], [this.x + Math.cos(a + 1.2) * .8, this.y + h + rr(-.5, .5), this.z + Math.sin(a + 1.2) * .8], .12, [.5, .85, 1.5], .03); } if (rnd() < dt * 18) fxPart(this.x + rr(-.7, .7), this.y + rr(.4, 3.2), this.z + rr(-.7, .7), 0, rr(-.5, .1), 0, rr(.4, .9), rr(.05, .08), .6, 1.1, 2.0, { drag: .5 }); }
     this.em.on = damp(this.em.on, TOWER_STUN ? .12 : 1, TOWER_STUN ? 8 : 3, dt);
     if (this.flame) this.flame.on = this.em.on; if (this.flame2) this.flame2.on = this.em.on;
-    const hs = towerHaste(this), dtx = dt * hs; this.hasted = hs > 1;
+    const hs = towerHaste(this), dtx = dt * hs * towerRate(this); this.hasted = hs > 1;
     if (hs > 1 && rnd() < dt * 2.4) fxPart(this.x + rr(-.6, .6), this.y + rr(.4, 2.6), this.z + rr(-.6, .6), 0, rr(.5, 1), 0, rr(.5, .9), .045, 2.6, 2.0, .7, { drag: .5 });
     this.cool -= dtx;
     if (this.kind === 'archer') this.updArcher(dtx, d, lvl);
@@ -3261,7 +3261,7 @@ class Tower {
         this.cool = d.rate[lvl] * rr(.95, 1.08); this.recoil = 1;
         this.carriage.updateMatrixWorld(true); const mz = _tv.set(0, 0, this.mounts.gunLen - .2).applyMatrix4(this.barrel.matrixWorld);
         const gy = G.B.heightAt(q.x, q.z);
-        G.shells.push({ x0: mz.x, y0: mz.y, z0: mz.z, tx: q.x, ty: Math.max(gy, q.y - tgt.hitH) + .05, tz: q.z, t: 0, T, dmg: towerDmg(this), splash: d.splash[lvl] * MOD.splash, tower: this, x: mz.x, y: mz.y, z: mz.z, sm: 0, arc: 1.5 + dist * .2 });
+        G.shells.push({ x0: mz.x, y0: mz.y, z0: mz.z, tx: q.x, ty: Math.max(gy, q.y - tgt.hitH) + .05, tz: q.z, t: 0, T, dmg: towerDmg(this), splash: towerSplash(this), tower: this, x: mz.x, y: mz.y, z: mz.z, sm: 0, arc: 1.5 + dist * .2 });
         const dx = Math.sin(this.gunYaw), dz = Math.cos(this.gunYaw);
         lightFlash(mz.x, mz.y + .2, mz.z, 0xffc880, 420, .16, 15);
         fxTimed(5, mz.x + dx * .2, mz.y + .1, mz.z + dz * .2, 1.9, 1.9, 4, 3, 1.6, 1, .1); fxTimed(3, mz.x + dx * .3, mz.y + .12, mz.z + dz * .3, .9, .9, 4, 3.2, 2.2, 1, .2, { grow: .8 });
@@ -3290,11 +3290,14 @@ class Tower {
     if (c > .5 && rnd() < dt * 14 * c) { const a = rnd() * TAU; fxBolt([cp.x, cp.y, cp.z], [cp.x + Math.cos(a) * .7, cp.y + rr(-.5, .5), cp.z + Math.sin(a) * .7], .1, [.45, .7, 1.4], .035); }
     if (c >= 1 && tgt) {
       this.charge = 0; let from = [cp.x, cp.y, cp.z], cur = tgt, dmg = towerDmg(this); const hit = [];
-      for (let j = 0; j < d.jumps[lvl] + MOD.jumps && cur; j++) {
+      const frost = this.spec === 'b', nj = towerJumps(this);
+      for (let j = 0; j < nj && cur; j++) {
         hit.push(cur); const to = [cur.x, cur.y + cur.hitH, cur.z];
-        fxBolt(from, to, .26 - j * .015, [.5, .78, 1.6], .1 - j * .008);
+        fxBolt(from, to, .26 - j * .015, frost ? [1.3, 1.7, 2.0] : [.5, .78, 1.6], .1 - j * .008);
         fxSparks(to[0], to[1], to[2], 5, 3.5, 1.2, 2, 4, { grav: 3, size: .06 }); fxTimed(2, to[0], to[1], to[2], 1.6, 1.6, .5, .9, 2, .7, .16);
-        const cx = cur.x, cz = cur.z; slowMonster(cur, d.slow[lvl], d.slowT[lvl]); hitMonster(cur, dmg, 'bolt', 0, 0, this);
+        const cx = cur.x, cz = cur.z;
+        if (frost) { slowMonster(cur, .65, 2.6); cur.chillT = 3.2; hitMonster(cur, dmg, 'bolt', 0, 0, this, { raw: true }); }
+        else { slowMonster(cur, d.slow[lvl], d.slowT[lvl]); if (!hitMonster(cur, dmg, 'bolt', 0, 0, this) && this.spec === 'a') cur.shockT += 2; }
         dmg *= .86; from = to; let nb = null, nd = 3.0 * 3.0;
         for (const m of G.mons) { if (m.dead || m.hp <= 0 || !m.vis || hit.includes(m)) continue; const dd = dist2(cx, cz, m.x, m.z); if (dd < nd) { nd = dd; nb = m; } }
         cur = nb;
@@ -3363,7 +3366,7 @@ function explodeAt(x, y, z, dmg, splash, tower) {
   fxExplosion(x, y, z, sc);
   FX.decals.add(G.B.heightAt, x, z, splash * 1.2, .016, .013, .011, .85, 45);
   sfx('explode', x, z, 1, clamp(sc - .6, 0, 1));
-  const hits = []; let fire = false, shock = false, pin = false;
+  const hits = [], cm = comboMul(tower), bs = tower && tower.kind === 'bombard' ? tower.spec : null; let fire = false, shock = false, pin = false, shat = false;
   for (const m of G.mons) {
     if (m.dead || m.hp <= 0 || m.fly || !m.vis) continue;
     const d = Math.hypot(m.x - x, m.z - z); if (d > splash + m.rad) continue;
@@ -3372,14 +3375,17 @@ function explodeAt(x, y, z, dmg, splash, tower) {
   // Combos: Wildfire on burning foes, Thunderclap on shocked ones, Hammer and Anvil on pinned ones.
   for (let i = 0; i < hits.length; i += 2) {
     const m = hits[i], d = hits[i + 1], k = lerp(1, .45, sat(d / splash)), l = d || 1; let mul = 1;
-    if (fire) mul *= m.burnT > 0 ? 1 + .5 * MOD.combo : 1.1;
-    if (m.pinT > 0) { mul *= 1 + .45 * MOD.combo; pin = true; }
-    if (m.shockT > 0) { m.stunT = Math.max(m.stunT, (m.def.boss ? .45 : 1.25) * (1 - (m.def.slowRes || 0)) * (.6 + .4 * MOD.combo)); shock = true; }
+    if (bs === 'a' && m.def.arm === 'fort') mul *= 1.4; if (bs === 'b' && m.def.arm === 'light') mul *= 1.5;
+    if (fire) mul *= m.burnT > 0 ? 1 + .5 * cm : 1.1;
+    if (m.pinT > 0) { mul *= 1 + .45 * cm; pin = true; }
+    if (m.chillT > 0) { mul *= 1 + .6 * cm; m.chillT = 0; shat = true; fxSparks(m.x, m.y + m.hitH, m.z, 8, 4, 3, 1.6, 2.4, { size: .07, grav: 6 }); }
+    if (m.shockT > 0) { m.stunT = Math.max(m.stunT, (m.def.boss ? .45 : 1.25) * (1 - (m.def.slowRes || 0)) * (.6 + .4 * cm)); shock = true; }
     const dead = hitMonster(m, dmg * k * mul, 'blast', (m.x - x) / l, (m.z - z) / l, tower, { raw: true });
     if (fire && !dead) applyBurn(m, dmg * .45, tower, 3.5);
   }
   if (fire) { comboPop('wildfire', x, y + .9, z); fxTimed(3, x, y + .5, z, splash * 2.6, splash * 2.6, 5, 3.2, 1.6, 1, .55, { grow: 1.5 }); fxEmbers(x, y + .3, z, 26, splash * .7); }
   if (shock) { comboPop('thunderclap', x, y + (fire ? 1.6 : .9), z); fxTimed(4, x, y + .1, z, splash * 3.2, splash * 3.2, .8, 1.5, 2.8, 1, .5, { ground: true }); lightFlash(x, y + 1, z, 0x9fd0ff, 420, .25, 14); }
+  if (shat) comboPop('shatter', x, y + (fire ? 1.6 : .9), z);
   if (pin) comboPop('anvil', x, y + (fire || shock ? 2.3 : .9), z);
   for (let i = 0; i < 5; i++) { _tm.compose(_tv.set(x + rr(-.3, .3), y + .2, z + rr(-.3, .3)), _tq.set(rr(-1, 1), rr(-1, 1), rr(-1, 1), 1).normalize(), _ts.set(.6, .6, .6)); addDebris(KIT.rubble, _tm, [.5, .45, .4], rr(-3, 3), rr(3, 6), rr(-3, 3), rr(4, 10), rr(1.6, 2.6)); }
 }
@@ -3422,7 +3428,7 @@ function spawnMonster(type, o = {}) {
     x: 0, y: 0, z: 0, yaw: 0, ph: rnd() * 6, mv: 1, vf: def.spd, spdNow: def.spd, spdMul: rr(.93, 1.07) * (o.spdMul || 1), slowT: 0, slowF: 0,
     flash: 0, flinch: 0, atk: -1, cd: rr(.1, .5), foe: null, prog: 0, vis: false, dead: false, dying: 0, ks: 0, kl: 0, hop: rnd(), rad: def.rad * (o.radMul || 1), mass: def.mass,
     hitH: def.hitH, scale: def.scale * rr(.95, 1.05), fly: !!def.fly, torch: false, flame: null, tint: (bt && bt[type]) || def.tint || null, men: 0, struck: false, step: 0, alive: true, lI: 0, lx: 0, ly: 0, lz: 0, lseed: rnd() * 9, vx: 0, vz: 0, pop: o.pop || 0,
-    burnT: 0, burnDps: 0, burnBy: null, shockT: 0, pinT: 0, stunT: 0, arcAt: -9,
+    burnT: 0, burnDps: 0, burnBy: null, shockT: 0, pinT: 0, stunT: 0, chillT: 0, stunAt: -9, arcAt: -9,
     haste: 0, hitAt: -9, beat: rnd() * 6, eth: false, gT: rnd() * 4, cast: 0, sumN: 0, sumT: def.summon ? def.summon.every * rr(.45, .7) : 0, stT: def.stomp ? def.stomp.every * .6 : 0, rage: false,
   };
   m.home = m.lane = m.lat;
@@ -3447,12 +3453,17 @@ function hitMonster(m, dmg, kind, dx, dz, tower, o) {
   if (!raw) {
     if (kind === 'arrow') {
       // Skewer: a pinned foe is an easy mark. Stormfire: fire on a shocked foe arcs.
-      if (m.pinT > 0) { mul = Math.max(mul, 1) * (1 + .6 * MOD.combo); comboPop('skewer', m.x, hy, m.z); fxSparks(m.x, hy, m.z, 6, 4, 3, 1.4, 1.0, { size: .06, grav: 6 }); }
+      const as = tower && tower.kind === 'archer' ? tower.spec : null; if (as === 'a' && m.fly) mul *= 1.5;
+      if (m.pinT > 0) { mul = Math.max(mul, 1) * (1 + .6 * comboMul(tower)); comboPop('skewer', m.x, hy, m.z); fxSparks(m.x, hy, m.z, 6, 4, 3, 1.4, 1.0, { size: .06, grav: 6 }); }
       if (m.shockT > 0 && G.t - m.arcAt > .45) { m.arcAt = G.t; stormfire(m, dmg, tower); }
-      applyBurn(m, dmg, tower);
+      if (as === 'b') {
+        applyBurn(m, dmg * 1.5, tower, 5); fxTimed(3, m.x, hy, m.z, 1.6, 1.6, 4, 2.2, .8, 1, .25, { grow: 1 });
+        for (const q of G.mons) { if (q === m || q.dead || q.hp <= 0 || !q.vis || dist2(m.x, m.z, q.x, q.z) > 1.9) continue; if (!hitMonster(q, dmg * .5, 'arrow', 0, 0, tower, { raw: true })) applyBurn(q, dmg * 1.5, tower, 5); }
+      } else applyBurn(m, dmg, tower);
     } else if (kind === 'sword') {
       // Galvanize: a blade discharges a shocked foe.
-      if (m.shockT > 0) { dmg += dmg * .8 * MOD.combo * typeMul('bolt', m) / mul; slowMonster(m, .4, 1.3); m.shockT += .6; comboPop('galvanize', m.x, hy, m.z); fxBolt([m.x, hy + .7, m.z], [m.x, hy - .2, m.z], .16, [.5, 1.3, 1.7], .07); }
+      if (tower && tower.spec === 'a' && tower.kind === 'guard' && G.t - m.stunAt > 2.5) { m.stunAt = G.t; m.stunT = Math.max(m.stunT, m.def.boss ? .15 : .5); }
+      if (m.shockT > 0) { dmg += dmg * .8 * comboMul(tower) * typeMul('bolt', m) / mul; slowMonster(m, .4, 1.3); m.shockT += .6; comboPop('galvanize', m.x, hy, m.z); fxBolt([m.x, hy + .7, m.z], [m.x, hy - .2, m.z], .16, [.5, 1.3, 1.7], .07); }
       m.pinT = Math.max(m.pinT, 2.4);
     } else if (kind === 'bolt') m.shockT = Math.max(m.shockT, 3 + MOD.shockT);
   }
@@ -3504,7 +3515,7 @@ function killMonster(m, kind, dx, dz, tower) {
   }
   if (def.split && G.mons.length < 90) { const [ty, n] = def.split; for (let i = 0; i < n; i++) { const u = n > 1 ? i / (n - 1) * 2 - 1 : 0; spawnMonster(ty, { s: Math.max(.5, m.s - .15 - .1 * Math.abs(u)), lat: clamp(m.lat + u * .34, -.95, .95), hpMul: m.maxHp / def.hp, pop: 1 }).kl = u * 2.2; } }
   if (m.torch && m.flame) fxEmbers(m.flame.x, m.flame.y, m.flame.z, 8, .15);
-  dropCoins(m.x, m.y + m.hitH * .6, m.z, Math.round(def.bounty * G.bountyMul * MOD.bounty), clamp(Math.round(def.bounty / 3), 1, 6));
+  dropCoins(m.x, m.y + m.hitH * .6, m.z, Math.round(def.bounty * G.bountyMul * MOD.bounty * (boonOf(tower) === 'vein' ? 1.25 : 1)), clamp(Math.round(def.bounty / 3), 1, 6));
   removeMonster(m);
   if (def.explode) blastAround(m, def.explode);
 }
@@ -3565,7 +3576,7 @@ function spawnFootman(tower) {
   const used = tower.men.map(f => f.slot); let slot = 0; while (used.includes(slot)) slot++;
   const f = {
     isMan: true, tower, slot, x: door.x, y: door.y, z: door.z, yaw: tower.yaw, ph: 0, mv: 0, atk: -1, flinch: 0, flash: 0, hp: tower.isKeep ? 1 : guardHp(tower), maxHp: tower.isKeep ? 1 : guardHp(tower), dmg: tower.isKeep ? 1 : guardDmg(tower),
-    rad: .26, mass: 7, s: tower.pad.s, lat: 0, onRoad: false, state: 'march', target: null, cd: rr(.2, .6), torch: slot === 0, gone: false, dead: false, vf: 0, scale: .9 + lvl * .05,
+    rad: .26, mass: 7, s: tower.pad.s, lat: 0, onRoad: false, state: 'march', target: null, cd: rr(.2, .6), torch: slot === 0, gone: false, dead: false, vf: 0, scale: (.9 + lvl * .05) * (tower.spec === 'a' ? 1.16 : tower.spec === 'b' ? .92 : 1),
     struck: false, alive: true, lI: slot === 0 ? 32 : 0, lx: 0, ly: 0, lz: 0, lseed: rnd() * 9, flame: null, leave: false, lvlUp: false, weapon: null, shield: null, age: 0, foes: 0,
   };
   if (f.torch) f.flame = addFlame({ x: door.x, y: -50, z: door.z, size: .34, embers: .45, glow: .8 });
@@ -3579,7 +3590,7 @@ function killFootman(f, dx, dz) {
   fxDust(f.x, f.y + .1, f.z, 3, .5, { a: .35 }); sfx('footmanDie', f.x, f.z, .8);
 }
 function slotPos(f, out) {
-  const B = G.B, n = guardCount(f.tower), lat = (n === 1 ? [0] : n === 2 ? [-.48, .48] : n === 3 ? [-.66, 0, .66] : [-.8, -.27, .27, .8])[f.slot % n] || 0;
+  const B = G.B, n = guardCount(f.tower), lat = n === 1 ? 0 : n === 2 ? [-.48, .48][f.slot % 2] : -.85 + 1.7 * (f.slot % n) / (n - 1);
   const p = pathAt(B, f.tower.pad.s, out); p.x += -p.tz * lat; p.z += p.tx * lat; return p;
 }
 const _fp = { x: 0, y: 0, z: 0, tx: 0, tz: 0 };
@@ -3642,6 +3653,7 @@ function drawFootman(f) {
     rigHuman(KIT.foot, SPEC.foot, f); heroDraw(f);
     G.hbars.push({ x: f.x, y: f.y + 1.75 * f.scale, z: f.z, f: sat(f.hp / f.maxHp), boss: false, man: true, hero: true }); return;
   }
+  if (f.tower.spec === 'a') f.plate = true;
   f.weapon = KIT.item.blade; f.shield = f.torch ? null : KIT.item.shieldH; f.wScale = 1;
   rigHuman(KIT.foot, SPEC.foot, f);
   if (f.torch && f.flame) { const p = RIGOUT.torch; f.flame.x = p.x; f.flame.y = p.y; f.flame.z = p.z; f.lx = p.x; f.ly = p.y + .2; f.lz = p.z; }
@@ -3835,6 +3847,7 @@ function endWave() {
   if (G.lives <= 6) G.press *= .9;
   G.press = clamp(G.press, .6, 2.5);
   G.gold += 24 + 9 * G.k + 10 * G.level;
+  const it = Math.min(40, Math.floor(G.gold * .08)); if (it > 0) { G.gold += it; G.interest = (G.interest || 0) + it; UI.alert('Interest: +' + it + ' gold', '#f4c450'); }
   if (MOD.mend) G.lives = Math.min(G.maxLives, G.lives + MOD.mend);
 }
 function updateWaves(dt) {
@@ -3876,7 +3889,7 @@ function buildTower(pad, kind, byPlayer) {
 }
 function upgradeTower(t, byPlayer) {
   if (!t || t.state !== 'active' || G.phase !== 'play') return false;
-  if (t.lvl >= 2) { if (!masterTower(t)) return false; UI.ping(t.x, t.y, t.z, byPlayer); return true; }
+  if (t.lvl >= 2) return false;
   const c = costOf(t.def, t.lvl + 1); if (G.gold < c) return false;
   G.gold -= c; UI.goldShown = Math.min(UI.goldShown, G.gold); t.upgrade(); UI.ping(t.x, t.y, t.z, byPlayer); return true;
 }
@@ -3886,6 +3899,14 @@ function sellTower(t) {
 }
 
 const AI = { think: .15, wait: 0, last: '' };
+// The commander picks a path from what stands nearby and what has been leaking.
+function aiBranch(t) {
+  const near = k => G.towers.some(o => o !== t && o.alive && o.kind === k && Math.hypot(o.x - t.x, o.z - t.z) < o.range + t.range - 1.2), lt = G.leakTypes; let air = 0; for (const ty in lt) if (MON[ty].cat === 'air') air += lt[ty];
+  if (t.kind === 'archer') return air > 1 || !near('bombard') ? 'a' : 'b';
+  if (t.kind === 'bombard') return t.pad.s / G.B.L > .6 && rnd() < .6 ? 'b' : 'a';
+  if (t.kind === 'spire') return near('bombard') && !near('archer') ? 'b' : rnd() < .25 ? 'b' : 'a';
+  return near('spire') || near('bombard') ? (rnd() < .6 ? 'a' : 'b') : 'b';
+}
 function aiThink(dt) {
   if (G.phase !== 'play' || UI.playerActive()) return;
   AI.think -= dt; if (AI.think > 0) return; AI.think = .5;
@@ -3910,12 +3931,13 @@ function aiThink(dt) {
       for (const t of towers) { const d = Math.hypot(t.x - pad.x, t.z - pad.z); if (kind === 'guard' && t.kind !== 'guard' && d < t.range + 1.5) syn += .16; if (kind !== 'guard' && t.kind === 'guard' && d < def.range[0] + 1) syn += .2; if (t.kind === kind && d < 6) syn -= .12; }
       if (kind === 'guard') { sc *= .8 + .5 * rel; for (const t of towers) if (t.kind === 'guard' && Math.abs(t.pad.s - pad.s) < 9) syn -= .5; }
       sc *= (1 + syn) * (1 + .12 * combosAt(pad, kind).length);
+      if (pad.boon === 'high') sc *= kind === 'guard' ? 1.05 : 1.3; else if (pad.boon === 'rune') sc *= 1.2; else if (pad.boon === 'vein') sc *= kind === 'archer' ? 1.3 : kind === 'guard' ? .9 : 1.15;
       opts.push({ sc, cost: costOf(def, 0), act: 'build', kind, pad });
     }
   }
   for (const t of towers) {
     if (t.state !== 'active') continue;
-    if (t.lvl >= 2) { if (t.mastery < MASTERY_MAX) { const c = masteryCost(t); opts.push({ sc: (.3 + sat(t.recent / 60) * .7) * (empty.length === 0 ? 1.3 : .6) * (110 / c), cost: c, act: 'up', t }); } continue; }
+    if (t.lvl >= 2) { if (!t.spec) { const c = branchCost(); opts.push({ sc: (.45 + sat(t.recent / 60) * .8) * (empty.length === 0 ? 1.5 : .75) * (110 / c), cost: c, act: 'spec', t }); } continue; }
     const c = costOf(t.def, t.lvl + 1), use = sat(t.recent / 60);
     let sc = (.5 + use * .9 + (t.lvl === 0 ? .12 : 0)) * (N >= 4 ? 1.25 : .7) * (empty.length === 0 ? 1.6 : 1) * (110 / c);
     if (t.kind === 'archer') sc *= 1 + air * .06; if (t.kind === 'spire') sc *= 1 + armor * .05;
@@ -3930,7 +3952,7 @@ function aiThink(dt) {
     if (!aff) return; pick = aff;
   }
   AI.wait = 0;
-  if (pick.act === 'build') buildTower(pick.pad, pick.kind, false); else upgradeTower(pick.t, false);
+  if (pick.act === 'build') buildTower(pick.pad, pick.kind, false); else if (pick.act === 'spec') { if (specTower(pick.t, aiBranch(pick.t))) UI.ping(pick.t.x, pick.t.y, pick.t.z, false); } else upgradeTower(pick.t, false);
   AI.think = N < 3 ? .12 : .8;
 }
 
@@ -4051,23 +4073,67 @@ const RUN = { relics: [], offer: null, offered: false, hold: 0, bonus: 0, combos
 
 function costOf(def, lvl) { return Math.max(5, Math.round(def.cost[lvl] * MOD.cost / 5) * 5); }
 function rangeOf(def, lvl) { return def.range[lvl] * (def === TOWER.guard ? 1 : MOD.range); }
-function guardCount(tw) { return tw.isKeep ? 1 : Math.min(4, tw.def.n[tw.lvl] + MOD.guardN); }
-function masteryMul(tw) { return 1 + .12 * (tw.mastery || 0); }
-function towerDmg(tw) { return tw.def.dmg[tw.lvl] * MOD.dmg[tw.kind] * masteryMul(tw); }
-function guardHp(tw) { return tw.def.hp[tw.lvl] * MOD.guardHp * masteryMul(tw); }
-function guardDmg(tw) { return tw.def.dmg[tw.lvl] * MOD.dmg.guard * masteryMul(tw); }
-const MASTERY_MAX = 5, MASTERY_NAME = ['', 'I', 'II', 'III', 'IV', 'V'];
-function masteryCost(tw) { return Math.max(5, Math.round((120 + 60 * (tw.mastery || 0)) * MOD.cost / 5) * 5); }
-// A tower at its third level can still be drilled: each mastery rank adds 12% to what it does.
-function masterTower(t) {
-  if (t.mastery >= MASTERY_MAX) return false; const c = masteryCost(t); if (G.gold < c) return false;
-  G.gold -= c; UI.goldShown = Math.min(UI.goldShown, G.gold); t.mastery++; t.spent += c; t.em.I = t.def.light[t.lvl] * (1 + .08 * t.mastery); for (const m of t.men) m.lvlUp = true;
-  const top = t.y + (t.mounts ? t.mounts.top : 2.5);
-  fxTimed(5, t.x, top, t.z, 3.4, 3.4, 2.6, 2.0, .7, 1, .5); fxEmbers(t.x, t.y + 1, t.z, 18, .6, 1, .8, .3); lightFlash(t.x, top, t.z, 0xffd070, 500, .35, 12);
-  floatText('Mastery ' + MASTERY_NAME[t.mastery], t.x, top + .3, t.z, '#ffe08a', { dur: 1.6 }); sfx('buildDone', t.x, t.z, .9);
+// Branches: at its third level a tower commits to one of two paths. The choice is final.
+const BRANCH = {
+  archer: {
+    a: { name: 'Longbows', desc: ['Far greater reach and harder hits.', 'Half again as much against flyers.'], dmg: 1.25, range: 1.35, col: [1.8, 1.5, .6] },
+    b: { name: 'Fire Volley', desc: ['Arrows burst on impact, and the', 'fire burns hotter and longer.'], dmg: 1.1, col: [2.4, .7, .2] },
+  },
+  bombard: {
+    a: { name: 'Siege Mortar', desc: ['A far bigger, heavier blast', 'that cracks fortified foes.'], dmg: 1.3, splash: 1.35, col: [2.0, 1.2, .5] },
+    b: { name: 'Grapeshot', desc: ['Fires more than twice as fast at', 'short range. Shreds light armor.'], dmg: .6, range: .72, rate: 2.4, splash: .8, col: [1.6, 1.6, 1.7] },
+  },
+  spire: {
+    a: { name: 'Tempest', desc: ['Bolts jump three more times', 'and the shock lingers.'], dmg: 1.2, jumps: 3, col: [.6, 1.2, 2.6] },
+    b: { name: 'Frost Spire', desc: ['Freezes instead of shocking: a heavy', 'slow. Shells shatter the frozen.'], dmg: 1.15, jumps: -1, col: [1.5, 2.2, 2.6] },
+  },
+  guard: {
+    a: { name: 'Knights', desc: ['Two armored knights with far more', 'health, whose blows stun.'], hp: 2.4, dmg: 1.8, n: 2, col: [1.8, 1.8, 2.2] },
+    b: { name: 'Militia', desc: ['Five light footmen who pin', 'far more of the column.'], hp: .7, dmg: .75, n: 5, col: [1.2, 2.0, .8] },
+  },
+};
+const PAD_BOON = {
+  high: { name: 'High ground', short: '+20% range', desc: 'High ground: +20% range (guards: +20% health)', col: [.6, 1.2, 2.2], hex: '#8fc7ff' },
+  rune: { name: 'Rune stone', short: 'combos +30%', desc: 'Rune stone: combos from here hit 30% harder', col: [1.7, .7, 2.4], hex: '#c79aff' },
+  vein: { name: 'Gold vein', short: 'kills pay +25%', desc: 'Gold vein: kills from here pay 25% more', col: [2.4, 1.7, .4], hex: '#f4c450' },
+};
+function branchOf(tw) { return tw && tw.spec ? BRANCH[tw.kind][tw.spec] : null; }
+function boonOf(tw) { return tw && tw.pad ? tw.pad.boon : null; }
+function branchCost() { return Math.max(5, Math.round(200 * MOD.cost / 5) * 5); }
+function comboMul(tw) { return MOD.combo * (boonOf(tw) === 'rune' ? 1.3 : 1); }
+function guardCount(tw) { if (tw.isKeep) return 1; const b = branchOf(tw); return b ? b.n + MOD.guardN : Math.min(4, tw.def.n[tw.lvl] + MOD.guardN); }
+function towerDmg(tw) { const b = branchOf(tw); return tw.def.dmg[tw.lvl] * MOD.dmg[tw.kind] * (b ? b.dmg : 1); }
+function towerRange(tw) { const b = branchOf(tw); return rangeOf(tw.def, tw.lvl) * (b && b.range ? b.range : 1) * (tw.kind !== 'guard' && boonOf(tw) === 'high' ? 1.2 : 1); }
+function towerRate(tw) { const b = branchOf(tw); return b && b.rate ? b.rate : 1; }
+function towerSplash(tw) { const b = branchOf(tw); return tw.def.splash[tw.lvl] * MOD.splash * (b && b.splash ? b.splash : 1); }
+function towerJumps(tw) { const b = branchOf(tw); return Math.max(1, tw.def.jumps[tw.lvl] + MOD.jumps + (b && b.jumps ? b.jumps : 0)); }
+function guardHp(tw) { const b = branchOf(tw); return tw.def.hp[tw.lvl] * MOD.guardHp * (b ? b.hp : 1) * (boonOf(tw) === 'high' ? 1.2 : 1); }
+function guardDmg(tw) { const b = branchOf(tw); return tw.def.dmg[tw.lvl] * MOD.dmg.guard * (b ? b.dmg : 1); }
+function specTower(t, which) {
+  if (!t || t.lvl < 2 || t.spec || t.state !== 'active' || G.phase !== 'play' || !BRANCH[t.kind][which]) return false; const c = branchCost(); if (G.gold < c) return false;
+  G.gold -= c; UI.goldShown = Math.min(UI.goldShown, G.gold); t.spec = which; t.spent += c; const b = branchOf(t), top = t.y + (t.mounts ? t.mounts.top : 2.5);
+  for (const m of t.men) m.leave = true;
+  fxTimed(5, t.x, top, t.z, 4, 4, b.col[0], b.col[1], b.col[2], 1, .6); fxEmbers(t.x, t.y + 1, t.z, 24, .7, 1, .8, .3); lightFlash(t.x, top, t.z, 0xffd070, 700, .4, 14);
+  floatText(b.name, t.x, top + .4, t.z, '#ffe08a', { dur: 2, big: 1 }); sfx('levelUp', t.x, t.z, .8);
   return true;
 }
-
+// Three or four pads in every land are worth fighting over.
+function markPads() {
+  const B = G.B, idx = B.pads.map((p, i) => i); for (const p of B.pads) p.boon = null;
+  for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)), t = idx[i]; idx[i] = idx[j]; idx[j] = t; }
+  const kinds = ['high', 'rune', 'vein']; if (G.level >= 2) kinds.push(kinds[Math.floor(rnd() * 3)]);
+  kinds.forEach((k, i) => { if (B.pads[idx[i]]) B.pads[idx[i]].boon = k; });
+}
+function sagaDraw() {
+  const B = G.B; if (!B || G.phase === 'rise' || G.phase === 'crumble') return;
+  for (const p of B.pads) {
+    if (!p.boon) continue; const c = PAD_BOON[p.boon].col, w = .5 + .5 * Math.sin(G.t * 2 + p.x);
+    FX.add.push(p.x, p.y + .09, p.z, 4.7, 4.7, 0, 0, c[0], c[1], c[2], 1.5 + .7 * w, 4, 0, .5, 1);
+    if (!p.tower) FX.add.push(p.x, p.y + .9 + .12 * w, p.z, .5, .5, 0, 0, c[0], c[1], c[2], .8, 0, 0, 0, 0);
+    if (rnd() < .07) fxPart(p.x + rr(-.9, .9), p.y + .1, p.z + rr(-.9, .9), 0, rr(.5, 1.1), 0, rr(.6, 1.1), .05, c[0], c[1], c[2], { drag: .4 });
+  }
+  for (const t of G.towers) { const b = branchOf(t); if (!b || !t.alive) continue; const top = t.y + (t.mounts ? t.mounts.top : 2.5) + .45; FX.add.push(t.x, top + .08 * Math.sin(G.t * 2.2 + t.idx), t.z, .55, .55, 0, 0, b.col[0], b.col[1], b.col[2], .9, 0, 0, 0, 0); FX.add.push(t.x, top, t.z, 1.5, 1.5, 0, 0, b.col[0], b.col[1], b.col[2], .22, 2, 0, 0, 0); }
+}
 function floatText(text, x, y, z, col, o = {}) {
   if (RUN.texts.length > 36) RUN.texts.shift();
   RUN.texts.push({ text, x, y, z, col, t: 0, dur: o.dur || 1.6, big: o.big || 0, rise: o.rise === undefined ? 1.2 : o.rise });
@@ -4079,6 +4145,7 @@ const COMBO = {
   thunderclap: { name: 'Thunderclap', pair: ['bombard', 'spire'], col: '#8fc7ff', desc: 'A shell landing on shocked foes stuns them where they stand.' },
   skewer: { name: 'Skewer', pair: ['archer', 'guard'], col: '#ff7a62', desc: 'Arrows find the gaps in a foe locked in a duel: +60%, and armor is ignored.' },
   anvil: { name: 'Hammer and Anvil', short: 'Anvil', pair: ['bombard', 'guard'], col: '#e9dfc8', desc: 'Foes pinned by swords take +45% from shells.' },
+  shatter: { name: 'Shatter', pair: ['bombard', 'spire'], col: '#d8f4ff', desc: 'Frost Spire only: a shell landing on frozen foes shatters the ice for +60%.' },
   galvanize: { name: 'Galvanize', pair: ['spire', 'guard'], col: '#7fe3ff', desc: 'A sword that cuts a shocked foe discharges it: +80% as magic, and it is slowed again.' },
 };
 const COMBO_IDS = Object.keys(COMBO);
@@ -4089,11 +4156,12 @@ function comboPop(id, x, y, z) {
   floatText(COMBO[id].name + '!', x, y + .5, z, COMBO[id].col, { dur: 1.5 }); sfx('combo', x, z, .5, COMBO_IDS.indexOf(id) / 5);
 }
 // Which combos a tower of this kind on this pad would share with the towers already standing.
+function pairCombo(ka, sa, kb, sb) { const frost = (ka === 'spire' && sa === 'b') || (kb === 'spire' && sb === 'b'); if (frost) return ka === 'bombard' || kb === 'bombard' ? 'shatter' : null; return comboOf(ka, kb); }
 function combosAt(pad, kind, skip) {
   const out = [], r0 = rangeOf(TOWER[kind], 0);
   for (const t of G.towers) {
     if (!t.alive || t === skip || t.kind === kind) continue;
-    const id = comboOf(kind, t.kind); if (!id || out.includes(id)) continue;
+    const id = pairCombo(kind, skip ? skip.spec : null, t.kind, t.spec); if (!id || out.includes(id)) continue;
     if (Math.hypot(t.x - pad.x, t.z - pad.z) < r0 + t.range - 1.2) out.push(id);
   }
   return out;
@@ -4108,13 +4176,13 @@ function stormfire(m, dmg, tower) {
   for (const o of G.mons) {
     if (n >= 2) break; if (o === m || o.dead || o.hp <= 0 || !o.vis || dist2(m.x, m.z, o.x, o.z) > 6.8) continue; n++;
     const to = [o.x, o.y + o.hitH, o.z]; fxBolt(from, to, .2, [1.8, 1.05, .4], .07); fxSparks(to[0], to[1], to[2], 4, 3, 3, 1.8, .5, { size: .05, grav: 4 });
-    hitMonster(o, dmg * .6 * MOD.combo, 'bolt', 0, 0, tower, { raw: true });
+    hitMonster(o, dmg * .6 * comboMul(tower), 'bolt', 0, 0, tower, { raw: true });
   }
   if (n) comboPop('stormfire', m.x, m.y + m.hitH, m.z);
 }
 // Burn, shock, pin and stun all run down here. Returns true if the burn finished the monster.
 function tickStatus(m, dt) {
-  if (m.shockT > 0) m.shockT -= dt; if (m.pinT > 0) m.pinT -= dt; if (m.stunT > 0) m.stunT -= dt;
+  if (m.shockT > 0) m.shockT -= dt; if (m.pinT > 0) m.pinT -= dt; if (m.stunT > 0) m.stunT -= dt; if (m.chillT > 0) m.chillT -= dt;
   if (m.burnT > 0 && !(m.dying > 0)) {
     m.burnT -= dt; const d = m.burnDps * dt * (m.eth ? .5 : 1) * typeMul('fire', m); m.hp -= d; m.hitAt = G.t;
     const tw = m.burnBy; if (tw) { tw.dealt += d; tw.recent += d; }
@@ -4130,6 +4198,7 @@ function drawStatus(m) {
     FX.add.push(m.x, h + .1, m.z, 1.1 + r * 2, 1.1 + r * 2, 0, 0, 1.2, .5, .12, .3 + .12 * Math.sin(G.t * 17 + m.lseed), 2, 0, 0, 0);
   }
   if (m.stunT > 0) { const top = m.y + m.def.top * m.scale / m.def.scale + .25; for (let i = 0; i < 3; i++) { const a = G.t * 6 + i * TAU / 3; FX.add.push(m.x + Math.cos(a) * (r + .15), top, m.z + Math.sin(a) * (r + .15), .16, .16, 0, 0, 1.4, 1.9, 2.6, 1, 0, 0, 0, 0); } }
+  if (m.chillT > 0) { FX.add.push(m.x, h + .1, m.z, 1.2 + r * 2, 1.2 + r * 2, 0, 0, .5, .9, 1.3, .32, 2, 0, 0, 0); if (rnd() < .25) fxPart(m.x + rr(-r, r), h + rr(-.3, .4), m.z + rr(-r, r), 0, rr(-.3, .1), 0, rr(.4, .8), .05, 1.6, 2.2, 2.6, { drag: 1 }); }
   if (m.pinT > 0 && m.shockT <= 0 && rnd() < .05) fxSparks(m.x, h, m.z, 1, 1.6, 2.6, 2.2, 1.6, { size: .04, grav: 5 });
 }
 
@@ -4247,12 +4316,12 @@ function sagaClearTick(dt, t) {
 function sagaBegin() {
   if (RUN.fresh) { RUN.fresh = false; RUN.relics = []; RUN.combos = {}; applyMods(); HERO.lvl = 1; HERO.xp = 0; HERO.stance = 'van'; G.lives = G.maxLives; G.gold = 300 + 80 * G.level; RUN.salvage = 0; }
   else { G.lives = Math.min(G.maxLives, G.lives + 6); G.gold = Math.round(Math.min(G.gold, 200) + 300 + 80 * G.level + MOD.startGold + RUN.salvage); }
-  RUN.landCombos = 0; RUN.texts.length = 0; heroBegin();
+  RUN.landCombos = 0; RUN.texts.length = 0; markPads(); heroBegin();
 }
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV', 'XV', 'XVI', 'XVII', 'XVIII', 'XIX', 'XX'];
 function chapterName() { return 'Chapter ' + (ROMAN[G.level] || (G.level + 1)); }
 // Monsters toughen with every land, to keep pace with what the run carries forward.
-function threat() { return 1.25 * Math.pow(1.35, G.level); }
+function threat() { return 1.25 * Math.pow(1.38, G.level); }
 
 const PX = (() => {
   const LINE = 9, CAP = 7, GAP = 1, CACHE_MAX = 500;
@@ -5171,7 +5240,7 @@ const UI = (() => {
       c.beginPath(); [[-BH, -BH], [BH, -BH], [BH, BH], [-BH, BH]].forEach((q, i) => { const p2 = mp2(q[0], q[1]); if (i) c.lineTo(p2[0], p2[1]); else c.moveTo(p2[0], p2[1]); }); c.closePath(); c.fillStyle = 'rgba(58,62,54,0.9)'; c.fill();
       c.beginPath(); for (let i = 0; i < B.n; i += 3) { const p2 = mp2(B.px[i], B.pz[i]); if (i) c.lineTo(p2[0], p2[1]); else c.moveTo(p2[0], p2[1]); } c.strokeStyle = '#a58a58'; c.lineWidth = 2.4 * s; c.lineJoin = c.lineCap = 'round'; c.stroke();
       const KC = { archer: '#f4c450', bombard: '#c9c2b2', spire: '#8fc7ff', guard: '#6f9be0' };
-      for (const p2 of B.pads) { if (p2.tower) { dot(p2.x, p2.z, 3 * s + 2, COLR.edge); dot(p2.x, p2.z, 3 * s, KC[p2.tower.kind]); } else dot(p2.x, p2.z, 2 * s, '#5b6472'); }
+      for (const p2 of B.pads) { if (p2.tower) { dot(p2.x, p2.z, 3 * s + 2, COLR.edge); dot(p2.x, p2.z, 3 * s, KC[p2.tower.kind]); } else dot(p2.x, p2.z, p2.boon ? 3 * s : 2 * s, p2.boon ? PAD_BOON[p2.boon].hex : '#5b6472'); }
       dot(B.beacon.x, B.beacon.z, 4 * s, '#ff8a3c'); dot(B.beacon.x, B.beacon.z, 2 * s, '#ffe2a0');
       for (const m of G.mons) if (!m.dead && (m.vis || m.fly)) dot(m.x, m.z, m.def.boss ? 4 * s : Math.max(2, s + 1), m.def.boss ? '#ff3a2a' : '#ff6a55');
       for (const f2 of G.men) if (!f2.dead) dot(f2.x, f2.z, f2.hero ? 3 * s : Math.max(2, s + 1), f2.hero ? '#7dff6a' : '#8fc7ff');
@@ -5199,6 +5268,7 @@ const UI = (() => {
       PX.icon(c, 'coin', Math.round(px - 4 * s * .75), Math.round(py - 4 * s * .75), Math.max(2, s - 1), 1);
       if (u >= 1) { U.goldShown = Math.min(G.gold, U.goldShown + q.value); U.goldBump = 1; sfx('coin', CAM.x, CAM.z, .35, rnd()); U.coins.splice(i, 1); }
     }
+    if (G.phase === 'play' && G.B) for (const p of G.B.pads) { if (!p.boon || p.tower || (U.menu && U.menu.pad === p)) continue; const q = proj(p.x, p.y + 1.5, p.z), k = Math.max(1, s - 1); c.globalAlpha = .9; PX.text(c, PAD_BOON[p.boon].name, Math.round(q.x), Math.round(q.y), k, PAD_BOON[p.boon].hex, { align: 'c', outline: COLR.dark }); c.globalAlpha = 1; }
     for (let i = RUN.texts.length - 1; i >= 0; i--) {
       const q = RUN.texts[i]; if (!G.paused) q.t += R.frameDt; if (q.t >= q.dur) { RUN.texts.splice(i, 1); continue; }
       const u = q.t / q.dur, p = proj(q.x, q.y + q.rise * (1 - (1 - u) * (1 - u)), q.z), k = q.big ? s + 1 : Math.max(2, s - (s > 3 ? 1 : 0)), pop = q.t < .12 ? 1 : 0;
@@ -5224,10 +5294,10 @@ const UI = (() => {
         let lit = null; const fk = U.gp.active ? TOWER_KINDS[m.focus % 4] : null;
         const cmbL = k => { const ids = combosAt(m.pad, k); return ids.length ? wrap('Combos: ' + ids.map(id => COMBO[id].short || COMBO[id].name).join(', '), 31 * 6 * s) : ['No combo partner in reach.']; };
         const lines = k => k ? [TOWER[k].name].concat(TOWER[k].desc, [ATK_HINT[TOWER[k].atk]], cmbL(k)) : tch ? ['Choose a tower', 'Tap one to see what it does,', 'then tap it again to build.'] : ['Choose a tower', 'Hover or press 1 to 4', 'to see what each does.'];
-        let textW = tw('Tap again to build'); for (const k of [null].concat(TOWER_KINDS)) for (const l of lines(k)) textW = Math.max(textW, tw(l));
+        let textW = Math.max(tw('Tap again to build'), m.pad.boon ? tw(PAD_BOON[m.pad.boon].name + ': ' + PAD_BOON[m.pad.boon].short) : 0); for (const k of [null].concat(TOWER_KINDS)) for (const l of lines(k)) textW = Math.max(textW, tw(l));
         const wP = Math.max(rowW, textW) + mp * 2, hP = mp * 2 + LH + 3 * s + bh + 4 * s + LH * 6 + 3 * s + (tch ? LH + s : 0), [px, py] = place(wP, hP);
         U.menuRect = { x: px, y: py, w: wP, h: hP };
-        plate(px, py, wP, hP); text('Build here', px + mp, py + mp - s, COLR.amber);
+        plate(px, py, wP, hP); text(m.pad.boon ? PAD_BOON[m.pad.boon].name + ': ' + PAD_BOON[m.pad.boon].short : 'Build here', px + mp, py + mp - s, m.pad.boon ? PAD_BOON[m.pad.boon].hex : COLR.amber);
         const bx0 = px + Math.round((wP - rowW) / 2), by = py + mp + LH + 3 * s;
         TOWER_KINDS.forEach((kind, i) => {
           const d = TOWER[kind], can = G.gold >= costOf(d, 0), bx = bx0 + i * (bwid + gapb);
@@ -5243,22 +5313,33 @@ const UI = (() => {
         if (ls[3]) text(ls[3], px + mp, ty + LH * 3 + 2 * s, COLR.cold); for (let q = 4; q < ls.length && q < 6; q++) text(ls[q], px + mp, ty + LH * q + 2 * s, ls[4][0] === 'C' ? COLR.ok : COLR.dim);
         if (tch && m.sel) { const can = G.gold >= costOf(TOWER[m.sel], 0); text(can ? 'Tap again to build' : 'Not enough gold yet', px + mp, ty + LH * 6 + 3 * s, can ? COLR.amber : COLR.red); }
       } else {
-        const t = m.tower, d = t.def, maxed = t.lvl >= 2, done = maxed && t.mastery >= MASTERY_MAX, upc = done ? 0 : maxed ? masteryCost(t) : costOf(d, t.lvl + 1), can = !done && G.gold >= upc && t.state === 'active', refund = Math.round(t.spent * .6), L1 = t.lvl + 1;
-        const ul = done ? 'Mastered' : maxed ? 'Master ' + upc : 'Upgrade ' + upc, sl = m.sellArm ? 'Confirm +' + refund : 'Sell +' + refund, iw9 = 9 * s, bw3 = Math.max(tw(ul), tw(sl), tw('Confirm +' + refund)) + iw9 + 11 * s, bh = (tch ? 24 : 15) * s, by0 = Math.round((bh - LH) / 2);
-        const st = t.kind === 'guard' ? guardCount(t) + ' footmen · ' + Math.round(d.hp[t.lvl] * MOD.guardHp) + ' health' : 'Range ' + rangeOf(d, t.lvl).toFixed(1) + ' · Damage ' + Math.round(towerDmg(t)) + (t.hasted ? ' · Watchfire' : '');
-        const nx = maxed ? (done ? 'Mastery V' : 'Mastery ' + t.mastery + '/5: each rank +12%') + ' · ' + t.kills + ' kills' : (t.kind === 'guard' ? 'Next: ' + Math.min(4, d.n[L1] + MOD.guardN) + ' footmen · ' + Math.round(d.hp[L1] * MOD.guardHp) + ' health' : 'Next: range ' + rangeOf(d, L1).toFixed(1) + ' · damage ' + Math.round(d.dmg[L1] * MOD.dmg[t.kind]));
-        const cids = combosAt(t.pad, t.kind, t), cls = wrap(ATK_NAME[d.atk] + ' attack · ' + (cids.length ? cids.map(id => COMBO[id].short || COMBO[id].name).join(', ') : 'no combo partner in reach'), Math.max(bw3 * 2 + 3 * s, 30 * 6 * s)); let clw = 0; for (const l of cls) clw = Math.max(clw, tw(l));
-        const wP = Math.max(bw3 * 2 + 3 * s, tw(d.name) + 26 * s, tw(st), tw(nx), clw) + mp * 2, xl2 = LH * cls.length + s, hP = mp * 2 + LH * 3 + 6 * s + bh + xl2, [px, py] = place(wP, hP);
+        const t = m.tower, d = t.def, maxed = t.lvl >= 2, br = branchOf(t), choose = maxed && !br, done = maxed, upc = maxed ? branchCost() : costOf(d, t.lvl + 1), can = !maxed && G.gold >= upc && t.state === 'active', canB = choose && G.gold >= upc && t.state === 'active', BR = BRANCH[t.kind], arm = choose ? (m.specArm || (U.hotBtn && U.hotBtn.id === 'specA' ? 'a' : U.hotBtn && U.hotBtn.id === 'specB' ? 'b' : null)) : null, refund = Math.round(t.spent * .6), L1 = t.lvl + 1;
+        const ul = maxed ? (br ? br.name : 'Max level') : 'Upgrade ' + upc, sl = m.sellArm ? 'Confirm +' + refund : 'Sell +' + refund, iw9 = 9 * s, bw3 = Math.max(tw(ul), tw(sl), tw('Confirm +' + refund), choose ? Math.max(tw(BR.a.name), tw(BR.b.name)) : 0) + iw9 + 11 * s, bh = (tch ? 24 : 15) * s, by0 = Math.round((bh - LH) / 2);
+        const st = t.kind === 'guard' ? guardCount(t) + ' footmen · ' + Math.round(guardHp(t)) + ' health' : 'Range ' + t.range.toFixed(1) + ' · Damage ' + Math.round(towerDmg(t)) + (t.hasted ? ' · Watchfire' : '');
+        const nx = maxed ? (choose ? 'Choose a path: ' + upc + ' gold. It is final.' : br.name + ' · ' + t.kills + ' kills') : (t.kind === 'guard' ? 'Next: ' + Math.min(4, d.n[L1] + MOD.guardN) + ' footmen · ' + Math.round(d.hp[L1] * MOD.guardHp) + ' health' : 'Next: range ' + rangeOf(d, L1).toFixed(1) + ' · damage ' + Math.round(d.dmg[L1] * MOD.dmg[t.kind]));
+        const cids = combosAt(t.pad, t.kind, t), cls = wrap(ATK_NAME[d.atk] + ' attack · ' + (cids.length ? cids.map(id => COMBO[id].short || COMBO[id].name).join(', ') : 'no combo partner in reach') + (t.pad.boon ? ' · ' + PAD_BOON[t.pad.boon].name : ''), Math.max(bw3 * 2 + 3 * s, 30 * 6 * s)); let clw = 0; for (const l of cls) clw = Math.max(clw, tw(l));
+        const bl = choose ? (arm ? BR[arm].desc.concat([m.specArm ? (canB ? (tch ? 'Tap it again to commit.' : 'Click it again to commit.') : 'Not enough gold yet.') : '']) : [tch ? 'Tap a path to read it,' : 'Click a path to read it,', 'then again to commit.', '']) : []; for (const l of bl) clw = Math.max(clw, tw(l));
+        const wP = Math.max(bw3 * 2 + 3 * s, tw(d.name) + 26 * s, tw(st), tw(nx), clw) + mp * 2, xl2 = LH * (cls.length + bl.length) + s, hP = mp * 2 + LH * 3 + 6 * s + bh + xl2 + (choose ? bh + 3 * s : 0), [px, py] = place(wP, hP);
         U.menuRect = { x: px, y: py, w: wP, h: hP };
         plate(px, py, wP, hP); text(d.name, px + mp, py + mp - s, COLR.amber);
         for (let i = 0; i < 3; i++) PX.icon(c, i <= t.lvl ? 'star' : 'starEmpty', px + wP - mp - (3 - i) * 6 * s, py + mp, s);
-        text(st, px + mp, py + mp + LH + s, COLR.tx); text(nx, px + mp, py + mp + LH * 2 + 2 * s, done ? COLR.dim : COLR.ok);
+        text(st, px + mp, py + mp + LH + s, COLR.tx); text(nx, px + mp, py + mp + LH * 2 + 2 * s, choose ? COLR.amber : done ? COLR.dim : COLR.ok);
+        bl.forEach((l, k) => text(l, px + mp, py + mp + LH * (3 + cls.length + k) + 3 * s, k === 2 ? (canB ? COLR.ok : COLR.red) : arm ? COLR.tx : COLR.dim));
         cls.forEach((l, k) => text(l, px + mp, py + mp + LH * (3 + k) + 3 * s, cids.length ? COLR.cold : COLR.dim));
         const by = py + mp + LH * 3 + 6 * s + xl2, bwf = Math.floor((wP - mp * 2 - 3 * s) / 2);
-        let r = button(px + mp, by, bwf, bh, 'up', can, () => doUpgrade(t), null, false);
-        PX.icon(c, 'upgrade', px + mp + 4 * s, by + by0 + r.dy, s, can ? 1 : .4); text(ul, px + mp + 4 * s + iw9 + 3 * s, by + by0 + r.dy, can ? COLR.tx : (done ? COLR.dim : COLR.red));
-        r = button(px + mp + bwf + 3 * s, by, bwf, bh, 'sell', true, () => { if (!m.sellArm) { m.sellArm = true; sfx('uiHover', t.x, t.z, .8); } else { buzz(16); doSell(t); } }, null, m.sellArm);
-        PX.icon(c, 'sell', px + mp + bwf + 7 * s, by + by0 + r.dy, s); text(sl, px + mp + bwf + 7 * s + iw9 + 3 * s, by + by0 + r.dy, m.sellArm ? COLR.ember : COLR.tx);
+        let r, sx = px + mp + bwf + 3 * s, sy = by, sw = bwf;
+        if (choose) {
+          ['a', 'b'].forEach((w, k) => {
+            const bx = px + mp + k * (bwf + 3 * s), q = button(bx, by, bwf, bh, 'spec' + w.toUpperCase(), canB, () => { if (m.specArm !== w) { m.specArm = w; sfx('uiHover', t.x, t.z, .8); } else if (specTower(t, w)) { sfx('uiClick', t.x, t.z, .8); buzz(16); m.specArm = null; } else deny(); }, null, m.specArm === w);
+            text(BR[w].name, bx + bwf / 2, by + by0 + q.dy, canB ? (m.specArm === w ? COLR.amber : COLR.tx) : COLR.red, { align: 'c' });
+          });
+          sx = px + mp; sy = by + bh + 3 * s; sw = wP - mp * 2;
+        } else {
+          r = button(px + mp, by, bwf, bh, 'up', can, () => doUpgrade(t), null, false);
+          PX.icon(c, 'upgrade', px + mp + 4 * s, by + by0 + r.dy, s, can ? 1 : .4); text(ul, px + mp + 4 * s + iw9 + 3 * s, by + by0 + r.dy, can ? COLR.tx : (done ? COLR.dim : COLR.red));
+        }
+        r = button(sx, sy, sw, bh, 'sell', true, () => { if (!m.sellArm) { m.sellArm = true; sfx('uiHover', t.x, t.z, .8); } else { buzz(16); doSell(t); } }, null, m.sellArm);
+        PX.icon(c, 'sell', sx + 4 * s, sy + by0 + r.dy, s); text(sl, sx + 4 * s + iw9 + 3 * s, sy + by0 + r.dy, m.sellArm ? COLR.ember : COLR.tx);
       }
       c.globalAlpha = 1;
     }
@@ -5289,6 +5370,8 @@ const UI = (() => {
         for (const id of COMBO_IDS) { const cb = COMBO[id], nn = RUN.combos[id] || 0; L.push([cb.name + ' · ' + TOWER[cb.pair[0]].short + ' + ' + TOWER[cb.pair[1]].short + (nn ? '   x' + nn : ''), cb.col]); para(cb.desc, COLR.dim); }
         L.push(null); L.push(['Arms and armor', COLR.amber]);
         para('Piercing (arrows): strong against light armor, weak against heavy and fortified.', COLR.tx); para('Siege (shells): strong against fortified, weak against light.', COLR.tx); para('Magic (bolts, fire): strong against heavy, weak against fortified.', COLR.tx); para('Normal (swords): steady, best against medium. Bosses feel half of any strength or weakness.', COLR.tx);
+        L.push(null); L.push(['Paths, pads and interest', COLR.amber]);
+        para('A third-level tower chooses one of two paths for ' + branchCost() + ' gold, and the choice is final. Glowing pads are special: high ground adds range, a rune stone strengthens combos, a gold vein pays more per kill. Unspent gold earns 8% interest after each wave, up to 40.', COLR.tx);
         L.push(null); L.push(['The march', COLR.amber]);
         para('After each boss, choose one of three relics. Some of what your towers cost is salvaged, unspent gold up to 200 comes along, and the beacon mends by 6 instead of being relit. The Warden keeps every level, and the Warden\'s sword pins foes like a footman\'s. All of it is lost when the beacon goes out.', COLR.tx);
         L.push(null); L.push([tch ? 'Tap anywhere to close' : 'T or a click closes this', COLR.dim]);
@@ -6033,7 +6116,7 @@ function step(rdt) {
   if (live) {
     updateWaves(dt); aiThink(dt);
     for (const t of G.towers) if (t.alive) t.update(dt);
-    heroUpdate(dt);
+    heroUpdate(dt); sagaDraw();
     updateUnits(dt);
     for (let i = G.mons.length - 1; i >= 0; i--) if (G.mons[i].dead) swapRemove(G.mons, i);
     updateProjectiles(dt);
@@ -6123,7 +6206,7 @@ function boot() {
   document.addEventListener('visibilitychange', () => { AU.setPaused(document.hidden); UI.dropTouches(); if (!document.hidden) { _last = performance.now(); UI.keepAwake(); } });
   window.addEventListener('blur', () => UI.dropTouches());
   for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => setTimeout(resizeRenderer, 60));
-  window.__cw = { G, R, CAM, UI, LT, FX, AI, PX, MON, HERO, RUN, MOD, COMBO, LOOK, pickRelic, heroXP, step, setPhase, spawnMonster, hitMonster, MAT, tick(dt, render) { R.frameDt = dt; step(dt); R.fade = 1; applyCamera(); if (render) renderFrame(); UI.draw(); }, bench(n = 40) { const gl = R.renderer.getContext(), px = new Uint8Array(4); applyCamera(); renderFrame(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const t0 = performance.now(); for (let i = 0; i < n; i++) { applyCamera(); renderFrame(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return +((performance.now() - t0) / n).toFixed(2); }, build(i, kind, lvl) { const pad = G.B.pads[i]; if (pad.tower) return; G.gold += 999; const t = buildTower(pad, kind, false); for (let k = 0; k < 90; k++) step(1 / 30); for (let l = 0; l < (lvl || 0); l++) { G.gold += 999; upgradeTower(t); for (let k = 0; k < 90; k++) step(1 / 30); } return t.kind + t.lvl; } };
+  window.__cw = { G, R, CAM, UI, LT, FX, AI, PX, MON, HERO, RUN, MOD, COMBO, LOOK, BRANCH, specTower, pickRelic, heroXP, step, setPhase, spawnMonster, hitMonster, MAT, tick(dt, render) { R.frameDt = dt; step(dt); R.fade = 1; applyCamera(); if (render) renderFrame(); UI.draw(); }, bench(n = 40) { const gl = R.renderer.getContext(), px = new Uint8Array(4); applyCamera(); renderFrame(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); const t0 = performance.now(); for (let i = 0; i < n; i++) { applyCamera(); renderFrame(); gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px); } return +((performance.now() - t0) / n).toFixed(2); }, build(i, kind, lvl) { const pad = G.B.pads[i]; if (pad.tower) return; G.gold += 999; const t = buildTower(pad, kind, false); for (let k = 0; k < 90; k++) step(1 / 30); for (let l = 0; l < (lvl || 0); l++) { G.gold += 999; upgradeTower(t); for (let k = 0; k < 90; k++) step(1 / 30); } return t.kind + t.lvl; } };
   if (HASH.k) G.k = +HASH.k;
   if (HASH.ff) { const n = Math.round(+HASH.ff * 30); for (let i = 0; i < n; i++) step(1 / 30); CAM.sx = CAM.fx; CAM.sz = CAM.fz; R.fade = 1; }
   if (HASH.phase) setPhase(HASH.phase);

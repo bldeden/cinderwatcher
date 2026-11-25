@@ -50,6 +50,7 @@ function endWave() {
   if (G.lives <= 6) G.press *= .9;
   G.press = clamp(G.press, .6, 2.5);
   G.gold += 24 + 9 * G.k + 10 * G.level;
+  const it = Math.min(40, Math.floor(G.gold * .08)); if (it > 0) { G.gold += it; G.interest = (G.interest || 0) + it; UI.alert('Interest: +' + it + ' gold', '#f4c450'); }
   if (MOD.mend) G.lives = Math.min(G.maxLives, G.lives + MOD.mend);
 }
 function updateWaves(dt) {
@@ -91,7 +92,7 @@ function buildTower(pad, kind, byPlayer) {
 }
 function upgradeTower(t, byPlayer) {
   if (!t || t.state !== 'active' || G.phase !== 'play') return false;
-  if (t.lvl >= 2) { if (!masterTower(t)) return false; UI.ping(t.x, t.y, t.z, byPlayer); return true; }
+  if (t.lvl >= 2) return false;
   const c = costOf(t.def, t.lvl + 1); if (G.gold < c) return false;
   G.gold -= c; UI.goldShown = Math.min(UI.goldShown, G.gold); t.upgrade(); UI.ping(t.x, t.y, t.z, byPlayer); return true;
 }
@@ -101,6 +102,14 @@ function sellTower(t) {
 }
 
 const AI = { think: .15, wait: 0, last: '' };
+// The commander picks a path from what stands nearby and what has been leaking.
+function aiBranch(t) {
+  const near = k => G.towers.some(o => o !== t && o.alive && o.kind === k && Math.hypot(o.x - t.x, o.z - t.z) < o.range + t.range - 1.2), lt = G.leakTypes; let air = 0; for (const ty in lt) if (MON[ty].cat === 'air') air += lt[ty];
+  if (t.kind === 'archer') return air > 1 || !near('bombard') ? 'a' : 'b';
+  if (t.kind === 'bombard') return t.pad.s / G.B.L > .6 && rnd() < .6 ? 'b' : 'a';
+  if (t.kind === 'spire') return near('bombard') && !near('archer') ? 'b' : rnd() < .25 ? 'b' : 'a';
+  return near('spire') || near('bombard') ? (rnd() < .6 ? 'a' : 'b') : 'b';
+}
 function aiThink(dt) {
   if (G.phase !== 'play' || UI.playerActive()) return;
   AI.think -= dt; if (AI.think > 0) return; AI.think = .5;
@@ -125,12 +134,13 @@ function aiThink(dt) {
       for (const t of towers) { const d = Math.hypot(t.x - pad.x, t.z - pad.z); if (kind === 'guard' && t.kind !== 'guard' && d < t.range + 1.5) syn += .16; if (kind !== 'guard' && t.kind === 'guard' && d < def.range[0] + 1) syn += .2; if (t.kind === kind && d < 6) syn -= .12; }
       if (kind === 'guard') { sc *= .8 + .5 * rel; for (const t of towers) if (t.kind === 'guard' && Math.abs(t.pad.s - pad.s) < 9) syn -= .5; }
       sc *= (1 + syn) * (1 + .12 * combosAt(pad, kind).length);
+      if (pad.boon === 'high') sc *= kind === 'guard' ? 1.05 : 1.3; else if (pad.boon === 'rune') sc *= 1.2; else if (pad.boon === 'vein') sc *= kind === 'archer' ? 1.3 : kind === 'guard' ? .9 : 1.15;
       opts.push({ sc, cost: costOf(def, 0), act: 'build', kind, pad });
     }
   }
   for (const t of towers) {
     if (t.state !== 'active') continue;
-    if (t.lvl >= 2) { if (t.mastery < MASTERY_MAX) { const c = masteryCost(t); opts.push({ sc: (.3 + sat(t.recent / 60) * .7) * (empty.length === 0 ? 1.3 : .6) * (110 / c), cost: c, act: 'up', t }); } continue; }
+    if (t.lvl >= 2) { if (!t.spec) { const c = branchCost(); opts.push({ sc: (.45 + sat(t.recent / 60) * .8) * (empty.length === 0 ? 1.5 : .75) * (110 / c), cost: c, act: 'spec', t }); } continue; }
     const c = costOf(t.def, t.lvl + 1), use = sat(t.recent / 60);
     let sc = (.5 + use * .9 + (t.lvl === 0 ? .12 : 0)) * (N >= 4 ? 1.25 : .7) * (empty.length === 0 ? 1.6 : 1) * (110 / c);
     if (t.kind === 'archer') sc *= 1 + air * .06; if (t.kind === 'spire') sc *= 1 + armor * .05;
@@ -145,7 +155,7 @@ function aiThink(dt) {
     if (!aff) return; pick = aff;
   }
   AI.wait = 0;
-  if (pick.act === 'build') buildTower(pick.pad, pick.kind, false); else upgradeTower(pick.t, false);
+  if (pick.act === 'build') buildTower(pick.pad, pick.kind, false); else if (pick.act === 'spec') { if (specTower(pick.t, aiBranch(pick.t))) UI.ping(pick.t.x, pick.t.y, pick.t.z, false); } else upgradeTower(pick.t, false);
   AI.think = N < 3 ? .12 : .8;
 }
 
