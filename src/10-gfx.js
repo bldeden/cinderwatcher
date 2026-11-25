@@ -365,9 +365,9 @@ const COL = {
   earth: C(0x54473c), earthD: C(0x352d27), grass: C(0x55583f), grassD: C(0x3f4231), moss: C(0x48553a),
   road: C(0x8a8176), roadD: C(0x5e574e), mud: C(0x43362b),
   wood: C(0x7a5c40), woodD: C(0x4e3a26), woodL: C(0x9a7a54), bark: C(0x3a3029), rope: C(0x8a7754),
-  iron: C(0x3c4049), ironL: C(0x646b78), steel: C(0x8a93a2), brass: C(0x9a7b3a), bronze: C(0x7a5a34), gold: C(0xe2aa3c),
-  bone: C(0xe0d7c0), boneD: C(0xa39a84), clothR: C(0x7c2c24), clothB: C(0x2f4c6c), clothD: C(0x2a2622), clothT: C(0x8a8068),
-  slate: C(0x424a5a), thatch: C(0x8a7646), black: C(0x08090c), ember: C(0xff7a2a), crystal: C(0x7fc4ff),
+  iron: C(0x3c4049), ironL: C(0x646b78), steel: C(0x8a93a2), brass: C(0xb08a3a), bronze: C(0x8a6434), gold: C(0xf0b83c),
+  bone: C(0xe0d7c0), boneD: C(0xa39a84), clothR: C(0x9a2a22), clothB: C(0x2c58b4), clothD: C(0x2a2622), clothT: C(0x8a8068),
+  slate: C(0x30529c), thatch: C(0xa88a48), black: C(0x08090c), ember: C(0xff7a2a), crystal: C(0x7fc4ff),
   tuftA: C(0x55583f), tuftB: C(0x8a7646), snow: C(0xdfe8f4), ice: C(0x9fcfee), leaf: C(0x33492c), leafL: C(0x58703a), sand: C(0xb9976a), ash: C(0x4a4648),
   slime: C(0x4a6a44), slimeD: C(0x28402c), rat: C(0x51453c), ratD: C(0x372e28), bat: C(0x2e2a36), ogre: C(0x93a076), ogreD: C(0x63704e), leather: C(0x5a4030), skin: C(0xb98a6a),
 };

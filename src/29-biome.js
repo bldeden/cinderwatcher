@@ -2,7 +2,7 @@
 const COL0 = Object.assign({}, COL);
 const BIOMES = [
   {
-    key: 'ashen', name: 'Ashen Pass', col: {},
+    key: 'ashen', name: 'Ashen Pass', col: { grass: 0x5c8a3a, grassD: 0x437030, moss: 0x55803a, earth: 0x7a5c3c, earthD: 0x503a28, road: 0xa8946c, roadD: 0x78664a, mud: 0x5a4430, tuftA: 0x5f9a3c, tuftB: 0xa0b84c, leaf: 0x3c7a30, leafL: 0x74a840, stone: 0x868c9a, stoneL: 0xa6acb8 },
     strata: [0x8f8474, 0x3c3f4c, 0x66564a, 0x767a86, 0x70503f, 0x4c4f5c, 0x9a8e7c, 0x55483e],
     hemi: [0x6d83bd, 0x1c1f2a, 1.15], moon: [0xa9c0f6, 1.55], fill: [0x4a5f96, .3], moonPos: [14, 44, -34],
     clear: [.0035, .005, .011], mistAmb: [.05, .08, .14], mist: [-.3, .42, .75, .1], sky: [.012, .022, .045], lift: [.010, .016, .030], sat: .92, expo: 1, sprAmb: [.05, .065, .1],
@@ -11,7 +11,7 @@ const BIOMES = [
     relief: [1.7, .5, 1, 0], puddles: 11, ponds: 1, sway: 1, wind: 1,
     wx: { n: [.05, 0], velA: [.35, -.12, .18], swayA: [.5, .5], sizeA: [.03, .055], colA: [.75, .8, .95, 1], alA: [.5, 0, 0], yA: [-1, 9], velB: [0, 0, 0], swayB: [0, 0], sizeB: [.05, .05], colB: [1, 1, 1, 1], alB: [0, 0, 0], yB: [0, 1], amb: [.1, .14, .22] },
     mobs: { ghoul: 1.6, wraith: 1.6, necro: 1.5 }, early: { wraith: 3, necro: 5 }, boss: ['giant', 'ogre'], tints: { wisp: [.75, .6, 1.3] }, wispHex: 0xb090ff,
-    trees: [['tree', 13, 2.6, 4.6]], stumps: 6, rocks: 70, tufts: 320, webs: 4,
+    trees: [['pine', 9, 2.8, 5.0], ['tree', 6, 2.6, 4.6]], stumps: 6, rocks: 70, tufts: 320, webs: 4,
   },
   {
     key: 'frost', name: 'Frostfall',
@@ -19,7 +19,7 @@ const BIOMES = [
     strata: [0x7d8aa0, 0x3a4254, 0x5d6678, 0x9fb4c8, 0x4b5468, 0x6a7890, 0xb8cadb, 0x475062],
     hemi: [0x86a8e0, 0x323c50, 1.1], moon: [0xc6dcff, 1.38], fill: [0x5f7fb4, .28], moonPos: [16, 42, -34],
     clear: [.0045, .0075, .015], mistAmb: [.1, .14, .21], mist: [-.3, .5, .7, .12], sky: [.03, .05, .085], lift: [.012, .02, .036], sat: .9, expo: .86, sprAmb: [.1, .125, .17],
-    cover: [1, .5, .34, .8], coverCol: [.5, .56, .66], coverP: [.74, .85, .32, 0],
+    cover: [1, .5, .34, .8], coverCol: [.62, .68, .8], coverP: [.74, .85, .32, 0],
     wat: [1, 0, .3, .35], watA: [.03, .075, .12], watB: [.4, .48, .58], fall: [1, 0, .96, 0], fallA: [.1, .17, .27], fallB: [.46, .58, .72], spray: 'none',
     relief: [1.5, .4, 1.15, 0], puddles: 8, ponds: 2, sway: .8, wind: 1.25, beacon: .8,
     wx: { n: [.68, .16], velA: [.55, -1.5, .3], swayA: [.28, 1.1], sizeA: [.055, .1], colA: [1, 1.05, 1.15, 1], alA: [.95, 0, .12], yA: [-3, 15], velB: [2.6, -1.1, 1.3], swayB: [.5, 1.6], sizeB: [.035, .06], colB: [.95, 1, 1.1, 1], alB: [.6, 0, .5], yB: [-2, 9], amb: [.4, .48, .62] },
@@ -28,7 +28,7 @@ const BIOMES = [
   },
   {
     key: 'fen', name: 'Mirefen',
-    col: { stone: 0x5c6858, stoneD: 0x384234, stoneL: 0x84907a, earth: 0x3b3a28, earthD: 0x24261a, grass: 0x40582c, grassD: 0x2c3e22, moss: 0x4c682e, road: 0x6c6a56, roadD: 0x48483a, mud: 0x2a281c, bark: 0x2c2820, tuftA: 0x486a30, tuftB: 0x7a8a40, leaf: 0x2a4626, leafL: 0x4c6c34 },
+    col: { stone: 0x5c6858, stoneD: 0x384234, stoneL: 0x84907a, earth: 0x3b3a28, earthD: 0x24261a, grass: 0x3f6a34, grassD: 0x2a4a28, moss: 0x4a7a3a, road: 0x6c6a56, roadD: 0x48483a, mud: 0x2a281c, bark: 0x2c2820, tuftA: 0x487a34, tuftB: 0x80a048, leaf: 0x2a5a30, leafL: 0x50803c },
     strata: [0x5a5a40, 0x2c3226, 0x4a4030, 0x66705a, 0x3a3020, 0x44503a, 0x777a5c, 0x33382a],
     hemi: [0x4f9482, 0x1a2218, 1.05], moon: [0xa6e6c4, 1.3], fill: [0x2f6f66, .3], moonPos: [10, 46, -32],
     clear: [.003, .007, .006], mistAmb: [.035, .1, .075], mist: [-.1, .62, 1.1, .12], sky: [.018, .05, .036], lift: [.008, .02, .016], sat: .94, expo: 1.02, sprAmb: [.04, .08, .065],
@@ -70,7 +70,19 @@ const BIOME = { start: 0 };
 function biomeFor(index) { return BIOMES[((BIOME.start + index) % BIOMES.length + BIOMES.length) % BIOMES.length]; }
 function applyBiomePalette(b) { Object.assign(COL, COL0); for (const k in b.col) COL[k] = C(b.col[k]); }
 
-const LOOK = { cur: null, to: null, bio: null };
+const LOOK = { cur: null, to: null, bio: null, day: 1, night: null, sun: null };
+// The sunlit version of a land's look: a warm sun, a blue sky, thinner mist and fuller color.
+function dayLookOf(b) {
+  const L = lookOf(b), mx = (a, t, k) => { for (let i = 0; i < a.length; i++) a[i] += (t[i] - a[i]) * k; };
+  mx(L.hs, [.52, .7, 1.0], .7); mx(L.hg, [.3, .26, .2], .7); L.hi[0] = b.hemi[2] * 1.45;
+  mx(L.mc, [1.0, .9, .72], .85); L.mi[0] = b.moon[1] * 1.75; mx(L.fc, [.75, .8, 1.0], .6); L.fi[0] = b.fill[1] * 1.6;
+  mx(L.clear, [.012, .03, .07], .8); for (let i = 0; i < 3; i++) { L.mAmb[i] = L.mAmb[i] * 2.4 + .1; L.sky[i] = L.sky[i] * 3 + .05; L.lift[i] *= .3; L.amb[i] = L.amb[i] * 3 + .28; L.wamb[i] = Math.min(1, L.wamb[i] * 1.6 + .3); }
+  L.mist[2] *= .45; L.grade[0] = Math.min(1.2, b.sat + .22); L.grade[1] = b.expo * .82;
+  return L;
+}
+// Day for the first waves, dusk for the fourth, night for the boss; dawn again once the land is won.
+function dayTarget() { if (G.phase === 'play') return G.k >= 5 ? 0 : G.k === 4 ? .42 : 1; return G.phase === 'defeat' ? 0 : 1; }
+function mixLook() { const a = LOOK.night, b = LOOK.sun, o = LOOK.to, k = LOOK.day; for (const key in a) for (let i = 0; i < a[key].length; i++) o[key][i] = a[key][i] + (b[key][i] - a[key][i]) * k; }
 function lookOf(b) {
   return { hs: C(b.hemi[0]), hg: C(b.hemi[1]), hi: [b.hemi[2]], mc: C(b.moon[0]), mi: [b.moon[1]], fc: C(b.fill[0]), fi: [b.fill[1]], clear: b.clear.slice(), mAmb: b.mistAmb.slice(), mist: b.mist.slice(), sky: b.sky.slice(), lift: b.lift.slice(), grade: [b.sat, b.expo], amb: b.sprAmb.slice(), wamb: b.wx.amb.slice() };
 }
@@ -85,8 +97,8 @@ function applyLook(L) {
   FX.alpha.mesh.material.uniforms.uAmb.value.set(L.amb[0], L.amb[1], L.amb[2]); WX.u.uAmb.value.set(L.wamb[0], L.wamb[1], L.wamb[2]);
 }
 function setBiomeLook(B, instant) {
-  const b = B.bio; LOOK.bio = b; LOOK.to = lookOf(b);
-  if (instant || !LOOK.cur) LOOK.cur = lookOf(b);
+  const b = B.bio; LOOK.bio = b; LOOK.night = lookOf(b); LOOK.sun = dayLookOf(b); LOOK.to = lookOf(b); mixLook();
+  if (instant || !LOOK.cur) { LOOK.cur = lookOf(b); for (const key in LOOK.to) LOOK.cur[key] = LOOK.to[key].slice(); }
   SH.uCover.value.fromArray(b.cover); SH.uCoverCol.value.fromArray(b.coverCol); SH.uCoverP.value.fromArray(b.coverP);
   SH.uWat.value.fromArray(b.wat); SH.uWatA.value.fromArray(b.watA); SH.uWatB.value.fromArray(b.watB); SH.uWind.value = b.sway;
   const f = MAT.fall.uniforms; f.uFP.value.fromArray(b.fall); f.uFA.value.fromArray(b.fallA); f.uFB.value.fromArray(b.fallB);
@@ -96,6 +108,7 @@ function setBiomeLook(B, instant) {
 }
 function updateBiomeLook(dt) {
   if (!LOOK.cur) return;
+  const dT = dayTarget(); LOOK.day += clamp(dT - LOOK.day, -dt * .09, dt * .14); mixLook();
   const k = 1 - Math.exp(-dt * 1.6), a = LOOK.cur, b = LOOK.to;
   for (const key in a) { const x = a[key], y = b[key]; for (let i = 0; i < x.length; i++) x[i] += (y[i] - x[i]) * k; }
   applyLook(a); WX.fade = Math.min(1, WX.fade + dt * .5); WX.u.uFade.value = WX.fade;

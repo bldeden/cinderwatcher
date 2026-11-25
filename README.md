@@ -15,6 +15,7 @@ A handful of firelit towers hold the great beacon of a ruined keep against endle
 - **A run that carries on.** The Warden, a hero with levels, an aura and a fire nova, walks from land to land. After each boss you pick one of three relics (six slots). Part of your towers' cost is salvaged, up to 200 unspent gold comes along, and the beacon mends by 6 instead of resetting. Everything is lost when the beacon goes out.
 - **Mastery.** A third-level tower can be drilled five more times, 12% each, so late gold has somewhere to go.
 - **A console in the style of a classic fantasy RTS.** Beveled gold frames, a hero plate with health and experience bars, a relic satchel, a minimap you can click, floating combat text, and warnings when the beacon is attacked.
+- **Sunlit lands and a day that turns.** Each land starts in daylight with fuller color, slides to dusk on the fourth wave and to night for the boss. Buildings carry blue roofs and gold trim. On a desktop the foot of the screen is a full console: minimap, hero panel, relic satchel, command row and a sun-and-moon medallion.
 - **A fix.** Ground-aligned effects (pad glows, shockwave rings, auras) were culled as back faces and never drew; they now do.
 - Monsters toughen by 35% per land to match. In test runs the AI commander usually falls somewhere in lands five to seven.
 

@@ -198,7 +198,7 @@ function beginBattle(first) {
 }
 function updatePhase(dt) {
   G.phaseT += dt; const B = G.B, t = G.phaseT;
-  updateBiomeLook(dt); LT.envK = damp(LT.envK, G.phase === 'crumble' ? 0 : (G.phase === 'rise' && t < 2.4 ? 0 : 1), 2, dt); LT.beaconMul = damp(LT.beaconMul, B.bio.beacon || 1, 2, dt);
+  updateBiomeLook(dt); LT.envK = damp(LT.envK, G.phase === 'crumble' ? 0 : (G.phase === 'rise' && t < 2.4 ? 0 : 1), 2, dt); LT.beaconMul = damp(LT.beaconMul, (B.bio.beacon || 1) * (1 - .45 * LOOK.day), 2, dt);
   const want = G.phase === 'defeat' ? 0 : (G.phase === 'rise' ? (t > B.igniteAt ? 1 : 0) : 1);
   LT.beaconOn = damp(LT.beaconOn, want, want ? 3 : 1.6, dt);
   LT.beaconLevel = damp(LT.beaconLevel, G.lives / G.maxLives, 3, dt);

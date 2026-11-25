@@ -293,14 +293,29 @@ const UI = (() => {
     plate(xc, yc, cW, hW, hotC ? { bd: COLR.bdHi, bg: COLR.bg2 } : you ? { bd: COLR.bdHi } : {});
     PX.icon(c, ic, xc + pad, yc + pad - s, s); text(ct, xc + pad + icw + 3 * s, yc + pad, you ? COLR.amber : COLR.tx); text(cs, xc + pad, yc + pad + LH + s, COLR.dim);
     const wrap = (str, maxW) => { const out = []; let cur2 = ''; for (const wd of str.split(' ')) { const t = cur2 ? cur2 + ' ' + wd : wd; if (cur2 && tw(t) > maxW) { out.push(cur2); cur2 = wd; } else cur2 = t; } if (cur2) out.push(cur2); return out; };
-    const tipBox = (bx, by, ls) => { let w = 0; for (const l of ls) w = Math.max(w, tw(l[0])); w += pad * 2; const h = LH * ls.length + pad * 2 - s; bx = clamp(bx, 4 * s + iL, Math.max(4 * s + iL, Wr - w - 4 * s)); plate(bx, by, w, h, { bd: COLR.bdHi, bg: 'rgba(8,9,16,0.96)' }); ls.forEach((l, k) => text(l[0], bx + pad, by + pad - s + k * LH, l[1])); return h; };
+    const tipBox = (bx, by, ls, up) => { let w = 0; for (const l of ls) w = Math.max(w, tw(l[0])); w += pad * 2; const h = LH * ls.length + pad * 2 - s; if (up) by -= h; bx = clamp(bx, 4 * s + iL, Math.max(4 * s + iL, Wr - w - 4 * s)); plate(bx, by, w, h, { bd: COLR.bdHi, bg: 'rgba(8,9,16,0.96)' }); ls.forEach((l, k) => text(l[0], bx + pad, by + pad - s + k * LH, l[1])); return h; };
     // The Warden's plate and the relic satchel sit under the top row, the way a hero's portrait does.
+    // On a desktop the bottom of the screen is a console: map on the left, the Warden and the satchel beside it, commands along the foot.
+    const con = !tch && R.cssW >= 900 && R.cssH >= 560, conH = con ? 28 * s + (LH + pad * 2 - s) + 10 * s : 0, conY = Hb - conH, conMh = conH - 6 * s, conMm = Math.round((conMh - 4 * s) / .66), conX = iL + 3 * s + conMm + 4 * s; R.hudBot = conH;
+    if (con) {
+      const g = c.createLinearGradient(0, conY, 0, H); g.addColorStop(0, '#2a2a36'); g.addColorStop(.5, '#16171f'); g.addColorStop(1, '#0a0b10'); c.fillStyle = g; c.fillRect(0, conY, W, H - conY);
+      c.fillStyle = 'rgba(0,0,0,0.28)'; for (let r = 0, yy = conY + 3 * s; yy < H; yy += 13 * s, r++) { c.fillRect(0, yy + 12 * s, W, s); for (let x = (r % 2 ? 0 : 17 * s); x < W; x += 34 * s) c.fillRect(x, yy, s, 12 * s); }
+      c.fillStyle = COLR.edge; c.fillRect(0, conY - s, W, s); c.fillStyle = COLR.bd; c.fillRect(0, conY, W, 2 * s); c.fillStyle = 'rgba(255,238,196,0.5)'; c.fillRect(0, conY, W, s); c.fillStyle = 'rgba(0,0,0,0.55)'; c.fillRect(0, conY + 2 * s, W, s);
+      c.fillStyle = '#ffe9a8'; for (let x = 20 * s; x < W; x += 40 * s) c.fillRect(x, conY, 2 * s, 2 * s);
+      // The hour: a sun-and-moon medallion set into the rim.
+      const mr = 12 * s, mx = Math.round((iL + Wr) / 2), my = conY + s, d = LOOK.day;
+      c.fillStyle = COLR.edge; c.beginPath(); c.arc(mx, my, mr + 2 * s, 0, TAU); c.fill(); c.fillStyle = COLR.bd; c.beginPath(); c.arc(mx, my, mr + s, 0, TAU); c.fill();
+      const sk = c.createLinearGradient(0, my - mr, 0, my + mr); sk.addColorStop(0, d > .5 ? '#3d78c8' : '#0d1230'); sk.addColorStop(1, d > .7 ? '#9cc8f0' : d > .3 ? '#e08a4a' : '#1f2550'); c.fillStyle = sk; c.beginPath(); c.arc(mx, my, mr, 0, TAU); c.fill();
+      if (d > .3) { c.fillStyle = d > .7 ? '#ffe27a' : '#ffb04a'; c.beginPath(); c.arc(mx, my, 4.4 * s, 0, TAU); c.fill(); c.strokeStyle = c.fillStyle; c.lineWidth = s; c.lineCap = 'butt'; for (let i = 0; i < 8; i++) { const a = i * TAU / 8 + G.t * .15; c.beginPath(); c.moveTo(mx + Math.cos(a) * 6 * s, my + Math.sin(a) * 6 * s); c.lineTo(mx + Math.cos(a) * 8.6 * s, my + Math.sin(a) * 8.6 * s); c.stroke(); } }
+      else { c.fillStyle = '#e8ecff'; c.beginPath(); c.arc(mx, my, 5.8 * s, 0, TAU); c.fill(); c.fillStyle = '#0d1230'; c.beginPath(); c.arc(mx + 2.8 * s, my - 1.6 * s, 5 * s, 0, TAU); c.fill(); c.fillStyle = '#e8ecff'; c.fillRect(mx - 6 * s, my + 4 * s, s, s); c.fillRect(mx + 5 * s, my + 2 * s, s, s); }
+      if (G.B) { const ch = chapterName() + ' · ' + G.B.bio.name, bw = 'Wave ' + waveNumber() + ' · best ' + Math.max(G.best || 0, waveNumber()), tx = Wr - 6 * s; text(ch, tx, conY + 7 * s, COLR.amber, { align: 'r' }); text(d > .7 ? 'Day' : d > .3 ? 'Dusk' : 'Night' , tx, conY + 7 * s + LH + s, COLR.dim, { align: 'r' }); }
+    }
     let heroB = y0 + topH;
     if (HERO.keep && (G.phase === 'play' || G.phase === 'clear')) {
       const f = HERO.f, up = !!f && !f.dead, st = !up ? 'Returns in ' + Math.max(1, Math.ceil(HERO.dead)) : HERO.stance === 'gate' ? 'Holds the gate' : 'Rides the vanguard';
-      const ik = s + Math.max(1, s >> 1), [hiw, hih] = PX.iconSize('hero'), pw = hiw * ik + 4 * s, tW = Math.max(tw(HERO.name) + 5 * s + tw('Lv 10'), tw('Rides the vanguard')), hw = pw + tW + 10 * s, hh = Math.max(hih * ik + 8 * s, LH * 2 + 13 * s), hx = x0;
+      const ik = s + Math.max(1, s >> 1), [hiw, hih] = PX.iconSize('hero'), pw = hiw * ik + 4 * s, tW = Math.max(tw(HERO.name) + 5 * s + tw('Lv 10'), tw('Rides the vanguard')), hw = pw + tW + 10 * s, hh = Math.max(hih * ik + 8 * s, LH * 2 + 13 * s), hx = con ? conX : x0;
       const clash = (rx, ry, rw, rh) => hx < rx + rw + g3 && hx + hw + g3 > rx && y0 + hS + g3 < ry + rh && y0 + hS + g3 + hh > ry;
-      const hy = clash(xw, yw, wW, hW) || clash(xc, yc, cW, hW) ? y0 + topH + g3 : y0 + hS + g3, hotH = over(hx, hy, hw, hh);
+      const hy = con ? conY + 5 * s : clash(xw, yw, wW, hW) || clash(xc, yc, cW, hW) ? y0 + topH + g3 : y0 + hS + g3, hotH = over(hx, hy, hw, hh);
       U.hud.push({ id: 'hero', x: hx, y: hy, w: hw, h: hh, fn: toggleHero, hud: true }); if (hotH) U.hudHot = true;
       plate(hx, hy, hw, hh, HERO.flash > 0 || hotH ? { bd: COLR.bdHi, bg: COLR.bg2 } : {});
       c.fillStyle = up ? 'rgba(86,66,30,0.9)' : 'rgba(34,34,40,0.9)'; c.fillRect(hx + 3 * s, hy + 3 * s, pw, hh - 6 * s);
@@ -314,24 +329,26 @@ const UI = (() => {
       heroB = hy + hh; let tipR = -1;
       const nR = RUN.relics.length, slots = tch || R.cssW < 700 ? nR : 6, sl = 17 * s;
       if (slots) {
-        const ry = heroB + g3;
+        const ry = con ? hy + Math.round((hh - sl) / 2) : heroB + g3;
         for (let i = 0; i < slots; i++) {
-          const rx = hx + i * (sl + s), id = RUN.relics[i], hotR = !!id && over(rx, ry, sl, sl);
+          const rx = (con ? hx + hw + 3 * s : hx) + i * (sl + s), id = RUN.relics[i], hotR = !!id && over(rx, ry, sl, sl);
           plate(rx, ry, sl, sl, hotR ? { bd: COLR.bdHi, bg: COLR.bg2 } : id ? {} : { bd: '#4a4436', bg: 'rgba(8,9,14,0.55)' });
           if (id) { const r = RELIC[id], [iw, ih] = PX.iconSize(r.icon); PX.icon(c, r.icon, rx + Math.round((sl - iw * s) / 2), ry + Math.round((sl - ih * s) / 2), s); U.hud.push({ id: 'slot' + i, x: rx, y: ry, w: sl, h: sl, fn: () => { U.relicTip = { i, t: 0 }; }, hud: true }); if (hotR) { U.hudHot = true; tipR = i; } }
         }
         heroB = ry + sl;
       }
+      if (con) heroB = conY - g3;
       if (tipR < 0 && U.relicTip && RUN.relics[U.relicTip.i]) tipR = U.relicTip.i;
-      if (tipR >= 0) { const r = RELIC[RUN.relics[tipR]]; heroB += g3 + tipBox(hx, heroB + g3, [[r.name, COLR.amber]].concat(r.desc.map(l => [l, COLR.tx]))); }
+      if (tipR >= 0) { const r = RELIC[RUN.relics[tipR]]; heroB += g3 + tipBox(hx, con ? heroB : heroB + g3, [[r.name, COLR.amber]].concat(r.desc.map(l => [l, COLR.tx])), con); }
       else if (hotH && !tch) {
         const ls = []; for (const k of HERO_SKILLS) { const has = HERO.lvl >= k[0]; ls.push([(has ? '' : 'Level ' + k[0] + ': ') + k[1], has ? COLR.amber : COLR.dim]); for (const l of wrap(k[2], 44 * 6 * s)) ls.push([l, has ? COLR.tx : COLR.dim]); }
         ls.push(['Click or H: ' + (HERO.stance === 'gate' ? 'ride out to the vanguard' : 'fall back to the gate'), COLR.ok]);
-        heroB += g3 + tipBox(hx, heroB + g3, ls);
+        heroB += g3 + tipBox(hx, con ? heroB : heroB + g3, ls, con);
       }
+      if (con) heroB = y0 + topH;
     }
     { let ay = heroB + g3 + s; for (const al of U.alerts) { c.globalAlpha = sat(Math.min(al.t * 5, (5 - al.t) * 1.5)); text(al.text, x0 + s, ay, al.col, { outline: COLR.dark }); ay += LH + s; } c.globalAlpha = 1; }
-    const dpr = R.dpr || 1, hB = LH + pad * 2 - s, zb = tch ? Math.max(22 * s, Math.round(40 * dpr)) : hB, yB = Hb - zb - 5 * s; let tipB = null;
+    const dpr = R.dpr || 1, hB = LH + pad * 2 - s, zb = tch ? Math.max(22 * s, Math.round(40 * dpr)) : hB, yB = Hb - zb - (con ? 3 : 5) * s; let tipB = null;
     const sq = (id, x, w, fn, tip, icon, on) => {
       const r = { id, x, y: yB, w, h: zb, fn, hud: true }, hot = over(x, yB, w, zb), down = U.press === id, dy = down ? s : 0; U.hud.push(r); if (hot) { U.hudHot = true; tipB = { x: x + w / 2, tip }; }
       plate(x, yB + dy, w, zb, hot || down ? { bd: COLR.bdHi, bg: COLR.bg2 } : on ? { bd: '#c9a24d' } : {}); icon(x, yB + dy, hot || down); return r;
@@ -341,7 +358,7 @@ const UI = (() => {
     const bars = (x, y) => { const u = zb / 18; c.fillStyle = COLR.tx; if (G.paused) { for (let i = 0; i < 4; i++) c.fillRect(Math.round(x + (6.5 + i * 1.5) * u), Math.round(y + (5 + i) * u), Math.ceil(1.5 * u), Math.round((8 - 2 * i) * u)); } else { c.fillRect(Math.round(x + 6 * u), Math.round(y + 5 * u), Math.round(2.2 * u), Math.round(8 * u)); c.fillRect(Math.round(x + 9.8 * u), Math.round(y + 5 * u), Math.round(2.2 * u), Math.round(8 * u)); } };
     const corners = (x, y) => { const u = Math.round(zb / 9), q = Math.round(zb / 5), f = isFull(); c.fillStyle = COLR.tx; for (const [ax, ay] of [[0, 0], [1, 0], [0, 1], [1, 1]]) { const cx = x + (ax ? zb - q - u : q), cy = y + (ay ? zb - q - u : q), ix = f ? (ax ? -1 : 1) : (ax ? 1 : -1), iy = f ? (ay ? -1 : 1) : (ay ? 1 : -1); c.fillRect(cx, cy, u, u); c.fillRect(cx - ix * u, cy, u, u); c.fillRect(cx, cy - iy * u, u, u); } };
     const play = G.phase === 'play' || G.phase === 'defeat', nR = (fullscreenOK() && tch ? 3 : 2), rightW = nR * zb + (nR - 1) * g3;
-    let xl = 5 * s + iL;
+    let xl = con ? conX : 5 * s + iL;
     sq('pause', xl, zb, togglePause, G.paused ? 'Resume (P)' : 'Pause (P)', bars, G.paused); xl += zb + g3;
     sq('speed', xl, zb, cycleSpeed, 'Speed (Tab)', label(G.speed + 'x', G.speed > 1 ? COLR.amber : COLR.tx), G.speed > 1); xl += zb + g3;
     sq('tome', xl, zb, toggleTome, 'Tome of the Watch (T)', (x, y) => { const k = Math.max(s, Math.floor(zb / 14)), [iw2, ih2] = PX.iconSize('tome'); PX.icon(c, 'tome', x + Math.round((zb - iw2 * k) / 2), y + Math.round((zb - ih2 * k) / 2), k, 1); }, U.tome); xl += zb + g3;
@@ -353,7 +370,7 @@ const UI = (() => {
     if (nR === 3) { sq('full', xr, zb, toggleFull, 'Full screen', corners, false); xr -= zb + g3; }
     sq('zin', xr, zb, () => camZoomBy(1.5), 'Zoom in (+)', glyph('+', cur < 2.99 ? COLR.tx : '#5a5448'), false); xr -= zb + g3;
     sq('zout', xr, zb, () => camZoomBy(1 / 1.5), 'Zoom out (-)', glyph('-', cur > camZoomMin() + .01 ? COLR.tx : '#5a5448'), false);
-    let yUp = yB - g3;
+    let yUp = con ? conY - g3 - s : yB - g3;
     if (CAM.man && play) {
       const lbl = 'Follow the fight', w = tw(lbl) + pad * 2, fits = xr - g3 - w >= xl, xf2 = fits ? xr - g3 - w : Wr - w - 5 * s, yf = fits ? yB + Math.round((zb - hB) / 2) : yB - g3 - hB, hotF = over(xf2, yf, w, hB);
       plate(xf2, yf, w, hB, hotF ? { bd: COLR.bdHi, bg: COLR.bg2 } : { bd: '#c9a24d' }); text(lbl, xf2 + pad, yf + pad - s, COLR.tx);
@@ -361,10 +378,10 @@ const UI = (() => {
     } else U.followRect = null;
     // A minimap in the corner: the road, the pads, and everything on the march.
     let mapR = null;
-    if (!tch && R.cssW >= 760 && R.cssH >= 520 && G.B && play) {
-      const mm = 62 * s, mh = Math.round(mm * .66) + 4 * s, mx0 = 5 * s + iL, my0 = yB - g3 - mh, B = G.B, cyw = Math.cos(CAM.yaw), syw = Math.sin(CAM.yaw), k = (mm / 2 - 4 * s) / (BH * 1.4142), kv = k * .62, cx = mx0 + mm / 2, cyy = my0 + mh / 2;
+    if (!tch && R.cssW >= 760 && R.cssH >= 520 && G.B && (play || con)) {
+      const mm = con ? conMm : 62 * s, mh = con ? conMh : Math.round(mm * .66) + 4 * s, mx0 = (con ? 3 : 5) * s + iL, my0 = con ? conY + 4 * s : yB - g3 - mh, B = G.B, cyw = Math.cos(CAM.yaw), syw = Math.sin(CAM.yaw), k = (mm / 2 - 4 * s) / (BH * 1.4142), kv = k * .62, cx = mx0 + mm / 2, cyy = my0 + mh / 2;
       const mp2 = (x, z) => [cx + (x * cyw - z * syw) * k, cyy + (x * syw + z * cyw) * kv], dot = (x, z, r, col) => { const q = mp2(x, z); c.fillStyle = col; c.fillRect(Math.round(q[0] - r / 2), Math.round(q[1] - r / 2), r, r); };
-      const hotM = over(mx0, my0, mm, mh); plate(mx0, my0, mm, mh, hotM ? { bd: COLR.bdHi } : {}); mapR = { x: mx0, y: my0, w: mm, h: mh };
+      const hotM = over(mx0, my0, mm, mh); plate(mx0, my0, mm, mh, hotM ? { bd: COLR.bdHi } : {}); mapR = con ? null : { x: mx0, y: my0, w: mm, h: mh };
       c.beginPath(); [[-BH, -BH], [BH, -BH], [BH, BH], [-BH, BH]].forEach((q, i) => { const p2 = mp2(q[0], q[1]); if (i) c.lineTo(p2[0], p2[1]); else c.moveTo(p2[0], p2[1]); }); c.closePath(); c.fillStyle = 'rgba(58,62,54,0.9)'; c.fill();
       c.beginPath(); for (let i = 0; i < B.n; i += 3) { const p2 = mp2(B.px[i], B.pz[i]); if (i) c.lineTo(p2[0], p2[1]); else c.moveTo(p2[0], p2[1]); } c.strokeStyle = '#a58a58'; c.lineWidth = 2.4 * s; c.lineJoin = c.lineCap = 'round'; c.stroke();
       const KC = { archer: '#f4c450', bombard: '#c9c2b2', spire: '#8fc7ff', guard: '#6f9be0' };
